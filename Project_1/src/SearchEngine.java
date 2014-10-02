@@ -10,7 +10,16 @@ public class SearchEngine {
 	 */
 	public static void main(String[] args) throws IOException {
 		//final Path currentWorkingPath = Paths.get("F:\\CECS 529 Information Retrival\\Homeworks\\Homework 3\\Project_1").toAbsolutePath();
-		final Path currentWorkingPath = Paths.get("F:\\CECS 529 Information Retrival\\Homeworks\\Homework 3\\Project_1\\New folder").toAbsolutePath();
+		//System.out.println("Starting");
+		//final Path currentWorkingPath = Paths.get("F:\\CECS 529 Information Retrival\\Homeworks\\Homework 3\\Project_1\\New folder").toAbsolutePath();
+		
+		/*To-Do
+		 * Currently it will find the current path and process any documents in it --Fix for finding documents with github.
+		 * Will need to change it to asking the user for directoy.
+		 */
+		final Path initalPath = Paths.get("").toAbsolutePath();
+		final Path currentWorkingPath = Paths.get(initalPath.toString() + "//New folder").toAbsolutePath();  
+		
 		// the Positional index
 		final NaiveInvertedIndex index = new NaiveInvertedIndex();
 
