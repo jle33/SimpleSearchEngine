@@ -7,10 +7,9 @@ import java.util.*;
  */
 public class AdvancedTokenStream implements TokenStream {
 	private Scanner mReader;
+	
 	/**
 	 * Constructs a AdvancedTokenStream to read from the specified file.
-	 * @param fileToOpen
-	 * @throws FileNotFoundException
 	 */
 	public AdvancedTokenStream(File fileToOpen) throws FileNotFoundException{
 		mReader = new Scanner(new FileReader(fileToOpen));
@@ -18,7 +17,6 @@ public class AdvancedTokenStream implements TokenStream {
 
 	/**
 	 * Constructs a AdvancedTokenStream to read from the specified text.
-	 * @param text
 	 */
 	public AdvancedTokenStream(String text){
 		mReader = new Scanner(text);
@@ -26,8 +24,6 @@ public class AdvancedTokenStream implements TokenStream {
 	
 	/**
 	 * Will check if it is a hyphenated token
-	 * @param token
-	 * @return
 	 */
 	@Override
 	public boolean isHyphenatedToken(){
@@ -38,6 +34,10 @@ public class AdvancedTokenStream implements TokenStream {
 		return false;
 	}
 	
+	/**
+	 * Returns the next token from the stream for hyphenanted tokens
+	 * or null if there is no token.
+	 */
 	@Override
 	public String nextHyphenToken(){
 		if (!hasNextToken()){
