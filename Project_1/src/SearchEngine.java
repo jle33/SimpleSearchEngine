@@ -19,6 +19,7 @@ public class SearchEngine {
 		 */
 		System.out.println("Starting");
 		final Path initalPath = Paths.get("").toAbsolutePath();
+		//Current Test folder
 		final Path currentWorkingPath = Paths.get(initalPath.toString() + "//New folder").toAbsolutePath();  
 		
 		// the Positional index
