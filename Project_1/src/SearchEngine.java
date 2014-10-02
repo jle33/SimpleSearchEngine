@@ -17,6 +17,7 @@ public class SearchEngine {
 		 * Currently it will find the current path and process any documents in it --Fix for finding documents with github.
 		 * Will need to change it to asking the user for directoy.
 		 */
+		System.out.println("Starting");
 		final Path initalPath = Paths.get("").toAbsolutePath();
 		final Path currentWorkingPath = Paths.get(initalPath.toString() + "//New folder").toAbsolutePath();  
 		
