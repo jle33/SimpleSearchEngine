@@ -64,6 +64,7 @@ public class SearchEngine {
 
 		});
 		
+		
 		printResults(index, fileNames);
 	}
 
