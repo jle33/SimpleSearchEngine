@@ -1,5 +1,7 @@
+package SearchComponents;
 import java.io.*;
 import java.util.*;
+
 
 /**
  * Reads tokens from the input stream one at a time. It will remove all non-alphanumeric characters from the beginning and end. 

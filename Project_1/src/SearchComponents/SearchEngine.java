@@ -1,32 +1,31 @@
+package SearchComponents;
+
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.text.DecimalFormat;
 import java.util.*;
+
 
 public class SearchEngine {
 
-	/**
-	 * 
-	 */
-	public static void main(String[] args) throws IOException {
-		//final Path currentWorkingPath = Paths.get("F:\\CECS 529 Information Retrival\\Homeworks\\Homework 3\\Project_1").toAbsolutePath();
-		//System.out.println("Starting");
-		//final Path currentWorkingPath = Paths.get("F:\\CECS 529 Information Retrival\\Homeworks\\Homework 3\\Project_1\\New folder").toAbsolutePath();
+	private static NaiveInvertedIndex index;
+	private static List<String> fileNames;
+	private static int gloTermLength;
+	private static List<String> results;
+	private static Path curPath;
+	
+	public static void tempmain(Path setPath) throws IOException{
 		
-		/*To-Do
-		 * Currently it will find the current path and process any documents in it --Fix for finding documents with github.
-		 * Will need to change it to asking the user for directoy.
-		 */
-		System.out.println("Starting");
-		final Path initalPath = Paths.get("").toAbsolutePath();
-		//Current Test folder
-		final Path currentWorkingPath = Paths.get(initalPath.toString() + "//New folder").toAbsolutePath();  
-		
+		final Path currentWorkingPath = setPath;
+		curPath = setPath;
 		// the Positional index
-		final NaiveInvertedIndex index = new NaiveInvertedIndex();
+		//final NaiveInvertedIndex index = new NaiveInvertedIndex();
+		index = new NaiveInvertedIndex();
 
 		// the list of file names that were processed
-		final List<String> fileNames = new ArrayList<String>();
+		//final List<String> fileNames = new ArrayList<String>();
+		fileNames = new ArrayList<String>();
 
 		// This is our standard "walk through all .txt files" code.
 		Files.walkFileTree(currentWorkingPath, new SimpleFileVisitor<Path>() {
@@ -63,10 +62,11 @@ public class SearchEngine {
 			}
 
 		});
-		
-		
+		index.finalize();
 		printResults(index, fileNames);
+		printStatistics(index, fileNames);
 	}
+	
 
 	/**
 	   Indexes a file by reading a series of tokens from the file, treating each 
@@ -92,19 +92,24 @@ public class SearchEngine {
 				 */
 				String curToken;
 				if(readFile.isHyphenatedToken()){
+					System.out.println("In hypen");
 					curToken = readFile.nextHyphenToken();
-					//Remove hyphens from token and add term to index
-					index.addTerm(curToken.replaceAll(" ", ""), docID, termPos);
+					//Remove hyphens from token, then add type and term to their respective index
+					String noHypenToken = curToken.replaceAll(" ", "");
+					index.addType(noHypenToken, docID);
+					index.addTerm(noHypenToken, docID, termPos);
 					termPos++;
 					//Steps to process original token into two tokens without hyphen
 					AdvancedTokenStream readHyphenToken = new AdvancedTokenStream(curToken);
 					while(readHyphenToken.hasNextToken()){
 						curToken = readHyphenToken.nextToken();
+						index.addType(curToken, docID);
 						index.addTerm(PorterStemmer.processToken(curToken), docID, termPos);
 						termPos++;
 					}
 				}else{
 					curToken = readFile.nextToken();
+					index.addType(curToken, docID);
 					String stemmedToken = PorterStemmer.processToken(curToken);
 					index.addTerm(stemmedToken, docID, termPos);
 					termPos++;
@@ -142,7 +147,7 @@ public class SearchEngine {
 				maxTermLength = termsList[i].length();
 			}
 		}
-
+		gloTermLength = maxTermLength;
 		// print out the terms and the respective postings
 		for(int j = 0; j < termsList.length; j++){
 			String currentLine = "";
@@ -174,6 +179,76 @@ public class SearchEngine {
 
 			System.out.println(currentLine);
 		}
+	}
+	
+	private static void printStatistics(NaiveInvertedIndex index, List<String> fileNames){
+		double[] topFreq = index.getTopTermFreq();
+		DecimalFormat numForm = new DecimalFormat("#.00");
+		
+		System.out.println("Number of Types: " + index.getNumTypes());
+		System.out.println("Number of Terms: " + index.getNumTerms());
+		System.out.println("Average Number of Documents per Posting: " + numForm.format(index.getAvgPosts()));
+		System.out.print("The document frequencies of the top 10 terms are: ");
+		for(int x = 0; x < 10; x++){
+			System.out.print(numForm.format(topFreq[x] * 100) + "% ");
+		}
+		System.out.println();
+		System.out.println("The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes");
+		
+	}
+	
+	
+	public static String getStatistics(){
+		String stats = new String();
+		DecimalFormat numForm = new DecimalFormat("#.00");
+		double[] topFreq = index.getTopTermFreq();
+		stats = "Number of Types: " + index.getNumTypes() + "\n";
+		stats = stats + "Number of Terms: " + index.getNumTerms() + "\n";
+		stats = stats + "Average Number of Documents per Posting: " + numForm.format(index.getAvgPosts()) + "\n";
+		stats = stats + "The document frequencies of the top 10 terms are: ";
+		for(int x = 0; x < 10; x++){
+			stats = stats + numForm.format(topFreq[x] * 100) + "% ";
+		}
+		stats = stats + "\n";
+		stats = stats + "The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes" + "\n\n";
+		return stats;
+	}
+	
+	//Stub for Query Processing
+	public static void processQuery(String word){
+		word = word.toLowerCase();
+		word = PorterStemmer.processToken(word);
+		System.out.println("Processing word: " + word);
+		List<Integer> postings = index.getPostings(word);
+		results = new ArrayList<String>();
+		String currentLine = "";
+		System.out.printf("%-" + gloTermLength + "s %s",word+":", "");
+		if(postings != null){
+			for(int docID : postings){
+				List<Integer> positions = index.getTermPositions(word, docID);
+				results.add(fileNames.get(docID));
+				currentLine = fileNames.get(docID) + "<";
+				for(int posID = 0; posID < positions.size(); posID++){
+					currentLine = currentLine + positions.get(posID) + ",";
+				}
+				currentLine = currentLine.substring(0, currentLine.length()-1);
+				currentLine = currentLine + ">";
+				currentLine = currentLine.trim();
+				System.out.print(currentLine + " ");
+			}
+			System.out.println("");
+		}else{
+			System.out.println("");
+		}
+
+	}
+
+	public static List<String> getqueryResult(){
+		return results;
+	}
+	
+	public static Path getPath(){
+		return curPath;
 	}
 
 }

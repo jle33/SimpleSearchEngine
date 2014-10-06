@@ -1,3 +1,4 @@
+package SearchComponents;
 import java.util.regex.*;
 
 public class PorterStemmer {

@@ -1,5 +1,7 @@
 package GUI;
 
+
+
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
@@ -8,34 +10,36 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JTextArea;
 import javax.swing.JLabel;
-import javax.swing.JProgressBar;
-import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import java.awt.CardLayout;
-import javax.swing.SwingConstants;
-import javax.swing.BoxLayout;
 import java.awt.Color;
 import javax.swing.JTextField;
-import java.awt.GridBagLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
-import java.nio.file.Path;
+import SearchComponents.SearchEngine;
 
-public class GuiEngine implements ActionListener {
+import java.awt.Container;
+import java.awt.Font;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+
+
+public class GuiEngine extends JFrame implements ActionListener {
 
 	private Path dirPath;
-	private JFrame frmSearchEngine, resultWindow;
+	private JFrame frmSearchEngine;
 	private JTextField directoryTextField, userQuery;
-	private JPanel MainPanel, directoryPanel, userQueryPanel, resultPanel, indexStatisticsPanel;
+	private JPanel mainPanel, directoryPanel, userQueryPanel, indexStatisticsPanel;
 	private JTextArea indexStatWindow;
-	private JButton btnIndex, btnChooseDirectory, btnSearch, btnViewIndexStatistics, btnNewQuery;
+	private JButton btnIndex, btnBack, btnChooseDirectory, btnSearch, btnViewIndexStatistics;
+	private JButton btnBackToSearch;
 	 /* Launch the application.
 	 */
 	public static void main(String[] args) {
@@ -81,144 +85,222 @@ public class GuiEngine implements ActionListener {
 	 */
 	private void initializeComponents() {
 		frmSearchEngine = new JFrame("Search Engine");
+		frmSearchEngine.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmSearchEngine.getContentPane().setLayout(null);
 		frmSearchEngine.setBounds(150, 150, 977, 518);
 		initializePanels();
-		initializeMainPanelComponenets();
-		frmSearchEngine.getContentPane().add(MainPanel);
 		initializeDirectoryComponenets();
 		initializeUserQueryComponents();
-		initializeResultComponents();
 		initializeIndexStatComponents();
+		initializeMainPanelComponenets();
 
-		
+		frmSearchEngine.getContentPane().add(mainPanel, BorderLayout.CENTER);
+		frmSearchEngine.setVisible(true);
 	}
 	
 	private void initializePanels(){
-		MainPanel = new JPanel();
+		mainPanel = new JPanel();
 		directoryPanel = new JPanel();
 		directoryTextField = new JTextField();
 		userQueryPanel = new JPanel();
-		resultPanel = new JPanel();
 		indexStatisticsPanel = new JPanel();
 	}
 	
 	private void initializeMainPanelComponenets(){
-		MainPanel.setBounds(0, 0, 960, 479);
-		MainPanel.setLayout(new CardLayout());
-		MainPanel.add(directoryPanel, "directory_Panel");
-		MainPanel.add(userQueryPanel, "userQuery_Panel");
+		mainPanel.setBounds(0, 0, 960, 479);
+		mainPanel.setLayout(new CardLayout());
+		
+		//Add panels to main panel
+		mainPanel.add(directoryPanel, "directory_Panel");
+		mainPanel.add(userQueryPanel, "userQuery_Panel");
+		mainPanel.add(indexStatisticsPanel, "indexStatistics_Panel");
+		mainPanel.validate();
 	}
 	
 	private void initializeDirectoryComponenets(){
 		directoryPanel.setBackground(Color.WHITE);
 		directoryPanel.setLayout(null);
+		
+		//Create indexing button
 		btnIndex = new JButton("Index");
+		btnIndex.addActionListener(this);
 		btnIndex.setBounds(500, 242, 128, 26);
-		directoryPanel.add(btnIndex);
 		
-		
+		//Create directory text field
 		directoryTextField.setBounds(284, 211, 404, 20);
 		directoryPanel.add(directoryTextField);
 		directoryTextField.setColumns(10);
 		
+		//Create choose directory button
 		btnChooseDirectory = new JButton("Choose Directory");
+		btnChooseDirectory.setBounds(348, 242, 128, 26);
 		btnChooseDirectory.addActionListener(this);
-		btnChooseDirectory.setBounds(343, 242, 128, 26);
-		directoryPanel.add(btnChooseDirectory);
 		
+		//Create label
 		JLabel lblChooseADirectoy = new JLabel("Enter a directoy to index or click the Choose Directory button below");
 		lblChooseADirectoy.setBounds(284, 185, 404, 14);
+		
+		//Add components to directory panel
 		directoryPanel.add(lblChooseADirectoy);
+		directoryPanel.add(btnChooseDirectory);
+		directoryPanel.add(btnIndex);
 	}
 	
 	private void initializeUserQueryComponents(){
-		userQueryPanel.setBackground(Color.WHITE);
+		userQueryPanel.setBackground(Color.YELLOW);
 		userQueryPanel.setLayout(null);
 		
+		//Create user query text field
+		userQuery = new JTextField();
+		userQuery.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if(e.getKeyCode() ==  KeyEvent.VK_ENTER){
+					viewResults();
+				}
+			}
+		});
+		userQuery.setBounds(241, 218, 429, 20);
+		userQuery.setColumns(10);
+		
+		//Create search button
+		btnSearch = new JButton("Search");
+		btnSearch.setBounds(675, 217, 89, 23);
+		btnSearch.addActionListener(this);
+		
+		//Create index statistics button
+		btnViewIndexStatistics = new JButton("View Index Statistics");
+		btnViewIndexStatistics.setBounds(390, 249, 148, 23);
+		btnViewIndexStatistics.addActionListener(this);
+		
+		//Create Goclongle label
 		JLabel lblGoclongle = new JLabel("Goclongle");
 		lblGoclongle.setBounds(402, 186, 106, 26);
 		lblGoclongle.setFont(new Font("Bookman Old Style", Font.BOLD, 21));
+		
+		//Add components to user query panel
 		userQueryPanel.add(lblGoclongle);
-		
-		userQuery = new JTextField();
-		userQuery.setBounds(241, 218, 429, 20);
 		userQueryPanel.add(userQuery);
-		userQuery.setColumns(10);
-		
-		btnSearch = new JButton("Search");
-		btnSearch.setBounds(675, 217, 89, 23);
 		userQueryPanel.add(btnSearch);
-		
-		btnViewIndexStatistics = new JButton("View Index Statistics");
-		btnViewIndexStatistics.setBounds(402, 243, 148, 23);
 		userQueryPanel.add(btnViewIndexStatistics);
-	}
-	
-	private void initializeResultComponents(){
-		resultPanel.setBackground(Color.GRAY);
-		MainPanel.add(resultPanel, "result_Panel");
-		resultPanel.setLayout(null);
 		
-		btnNewQuery = new JButton("New Query");
-		btnNewQuery.setBounds(0, 0, 960, 23);
-		resultPanel.add(btnNewQuery);
+		btnBack = new JButton("Back");
+		btnBack.addActionListener(this);
+		btnBack.setBounds(0, 0, 89, 23);
+		userQueryPanel.add(btnBack);
 	}
 	
 	private void initializeIndexStatComponents(){
 		indexStatisticsPanel.setBackground(Color.WHITE);
-		MainPanel.add(indexStatisticsPanel, "indexStatistics_Panel");
 		indexStatisticsPanel.setLayout(null);
 		
+		//Create back to search panel button
+		btnBackToSearch = new JButton("Back to Search");
+		btnBackToSearch.setBounds(0, 0, 960, 23);
+		btnBackToSearch.addActionListener(this);
+		indexStatisticsPanel.add(btnBackToSearch);
+		
+		//Create text area
 		indexStatWindow = new JTextArea();
 		indexStatWindow.setLineWrap(true);
-		indexStatWindow.setBounds(10, 11, 940, 457);
+		indexStatWindow.setBounds(0, 21, 960, 458);
 		indexStatWindow.setFont(new Font("Arial", Font.PLAIN, 12));
+		
+		//Add components to index statistics panel
 		indexStatisticsPanel.add(indexStatWindow);
 	}
 	
-	private void switchPanels(JPanel curPanel){
-		frmSearchEngine.setContentPane(curPanel);
+	private void switchPanels(JPanel curPanel, String layoutName){
+		CardLayout cl = (CardLayout) (mainPanel.getLayout());
+		cl.show(curPanel.getParent(), layoutName);
 	}
 	
-	private JPanel getMainPanel(){
-		return MainPanel;
+	public Container getMainPanel(){
+		return mainPanel;
 	}
 	
-	private JPanel getDirectoryPanel(){
+	public Container getDirectoryPanel(){
 		return directoryPanel;
 	}
 	
-	private JPanel getUserQueryPanel(){
+	public Container getUserQueryPanel(){
 		return userQueryPanel;
 	}
 	
-	private JPanel getResultPanel(){
-		return resultPanel;
-	}
-	
-	private JPanel getIndexStatisticPanel(){
+	public Container getIndexStatisticPanel(){
 		return indexStatisticsPanel;
 	}
 	
+
 	public void actionPerformed(ActionEvent e){
 		//Handle index button
 		if(e.getSource() == btnIndex){
-			directoryTextField.getText();
-			//index specified
+			//Pass directory path to index all text files
+			try {
+				SearchEngine.tempmain(dirPath);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				System.out.println("not working");
+			}
+			//Maybe have a working progress bar?
+			//Change frame to userQuery
+			System.out.println("index change");
+			switchPanels(userQueryPanel, "userQuery_Panel");
 		}
-		
-		if(e.getSource() == btnChooseDirectory){
-			directoryTextField.setText(getDirectory(frmSearchEngine));
+		//Handle back button
+		else if(e.getSource() == btnBack){
+			switchPanels(directoryPanel, "directory_Panel");
+		}
+		//Handle choose directory button
+		else if(e.getSource() == btnChooseDirectory){
+			System.out.println("choose dir");
+			dirPath = getDirectory(frmSearchEngine);
+			directoryTextField.setText(dirPath.toString());
+		}
+		//Handle search button
+		else if(e.getSource() == btnSearch){
+			viewResults();
+		}
+		//Handle index statistics button
+		else if(e.getSource() == btnViewIndexStatistics){
+			indexStatWindow.append(directoryTextField.getText() + "\n");
+			indexStatWindow.append(SearchEngine.getStatistics());
+			switchPanels(indexStatisticsPanel, "indexStatistics_Panel");
+		}
+		//Handle back to search button
+		else if(e.getSource() == btnBackToSearch){
+			//go back to search
+			switchPanels(userQueryPanel, "userQuery_Panel");
 		}
 	}
 	
-	private String getDirectory(JFrame parent){
+	private Path getDirectory(JFrame parent){
 		JFileChooser fc = new JFileChooser();
 		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		if(fc.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION){
-			return fc.getSelectedFile().getAbsolutePath();
+			return fc.getSelectedFile().toPath().toAbsolutePath();
 		}
 		return null;
+	}
+	
+	public void viewResults(){
+		String word = userQuery.getText();
+		SearchEngine.processQuery(word);
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+            	createResultWindow();
+            }
+        });
+	}
+	
+	private void createResultWindow(){
+    	JFrame frame = new JFrame("Results");
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		JComponent contentPane = new resultWindow();
+		contentPane.setOpaque(true);
+		frame.setContentPane(contentPane);
+		frame.pack();
+		frame.setVisible(true);
 	}
 }
