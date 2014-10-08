@@ -1,103 +1,116 @@
 package GUI;
 
-import SearchComponents.*;
-import java.awt.event.*;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.event.*;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 
-public class resultWindow extends JPanel implements ActionListener, MouseListener{
+import SearchComponents.SearchEngine;
+
+public class resultWindow extends JPanel {
 	private JList<String> list;
 	private DefaultListModel<String> listModel;
-	private JButton btnNewQuery;
-	private JTextField searchField;
-	
+	private JButton btnClose;
+
 	public resultWindow() {
 		setLayout(new BorderLayout());
 		listModel = new DefaultListModel<String>();
 		list = new JList<String>(listModel);
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setSelectedIndex(0);
-		list.addMouseListener(this);
+		listActions();
 		List<String> results = SearchEngine.getqueryResult();
 		list.setVisibleRowCount(results.size());
-		
-		for(String docs : results){
+
+		for(String docs : results) {
 			listModel.addElement(docs);
 		}
 		JScrollPane listScrollPane = new JScrollPane(list);
 		listScrollPane.setPreferredSize(new Dimension(480, 360));
-		JButton btnNewQuery = new JButton("Close");
-		btnNewQuery.addActionListener(this);
-		btnNewQuery.setEnabled(true);
-		btnNewQuery.setAlignmentX(Component.CENTER_ALIGNMENT);
-		
+		btnClose = new JButton("Close");
+		btnCloseActions();
+		btnClose.setEnabled(true);
+
 		JPanel resultPanel = new JPanel();
 		resultPanel.setLayout(new BoxLayout(resultPanel, BoxLayout.PAGE_AXIS));
-		resultPanel.add(btnNewQuery);
+		btnClose.setAlignmentX(Component.CENTER_ALIGNMENT);
+		resultPanel.add(btnClose);
 
 		add(listScrollPane, BorderLayout.CENTER);
 		add(resultPanel, BorderLayout.PAGE_END);
 	}
-	
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		if(e.getSource() == btnNewQuery){
-			//Figure out how to close just this window with the button
-		}
+
+	private void close() {
+		//Find the JFrame holding this panel
+		JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+		//Close current result window only.
+		parentFrame.dispose();
 	}
 
-	@Override
-	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-		//JList list = (JList)e.getSource();
-		if(e.getClickCount() == 2){
-			int index = list.locationToIndex(e.getPoint());
-			if(index >= 0){
-				if(Desktop.isDesktopSupported()){
-					String doc = list.getModel().getElementAt(index);
-					String path = SearchEngine.getPath().toString();
-					Path filePath = Paths.get(path + "\\" + doc).toAbsolutePath();
-					try {
-						Desktop.getDesktop().open(filePath.toFile());
-					} catch (IOException e1) {
-						System.out.println("No such file.");
-					}
+	private void openSelectedFile(int index){
+		if(index >= 0) {
+			if(Desktop.isDesktopSupported()) {
+				String doc = list.getModel().getElementAt(index);
+				String path = SearchEngine.getPath().toString();
+				Path filePath = Paths.get(path + "\\" + doc).toAbsolutePath();
+				try {
+					Desktop.getDesktop().open(filePath.toFile());
+				} catch (IOException e1) {
+					System.out.println("No such file.");
 				}
 			}
-			
 		}
 	}
 
-	@Override
-	public void mouseEntered(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-		//Do nothing
+	private void listActions(){
+		list.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(e.getClickCount() == 2) {
+					int index = list.locationToIndex(e.getPoint());
+					openSelectedFile(index);
+				}
+			}
+		});
+		list.addKeyListener(new KeyAdapter(){
+			@Override
+			public void keyPressed(KeyEvent e) {
+				// TODO Auto-generated method stub
+				if(e.getKeyCode() == KeyEvent.VK_ENTER){
+					int index = list.getSelectedIndex();
+					openSelectedFile(index);
+				}
+			}
+		});
 	}
 
-	@Override
-	public void mouseExited(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-		//Do nothing
-	}
+	private void btnCloseActions(){
+		btnClose.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				if(e.getSource() == btnClose) {
+					//Figure out how to close just this window with the button
+					System.out.println("CLOSEING btnClose");
+					close();
 
-	@Override
-	public void mousePressed(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-		//Do nothing
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-		//Do nothing
+				}
+			}
+		});
 	}
 }

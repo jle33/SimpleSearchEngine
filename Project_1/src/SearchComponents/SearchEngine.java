@@ -9,14 +9,15 @@ import java.util.*;
 
 public class SearchEngine {
 
-	private static NaiveInvertedIndex index;
+	private static String stats;
 	private static List<String> fileNames;
 	private static int gloTermLength;
 	private static List<String> results;
 	private static Path curPath;
-	
-	public static void tempmain(Path setPath) throws IOException{
-		
+	private static NaiveInvertedIndex index;
+
+	public static void indexDirectory(Path setPath) throws IOException{
+
 		final Path currentWorkingPath = setPath;
 		curPath = setPath;
 		// the Positional index
@@ -63,10 +64,11 @@ public class SearchEngine {
 
 		});
 		index.finalize();
-		printResults(index, fileNames);
-		printStatistics(index, fileNames);
+		stats = runStatistics(index);
+		//printResults(index, fileNames);
+		//printStatistics(index, fileNames);
 	}
-	
+
 
 	/**
 	   Indexes a file by reading a series of tokens from the file, treating each 
@@ -103,23 +105,28 @@ public class SearchEngine {
 					AdvancedTokenStream readHyphenToken = new AdvancedTokenStream(curToken);
 					while(readHyphenToken.hasNextToken()){
 						curToken = readHyphenToken.nextToken();
-						index.addType(curToken, docID);
-						index.addTerm(PorterStemmer.processToken(curToken), docID, termPos);
-						termPos++;
+						if(curToken != null){
+							index.addType(curToken, docID);
+							index.addTerm(PorterStemmer.processToken(curToken), docID, termPos);
+							termPos++;
+						}
 					}
 				}else{
 					curToken = readFile.nextToken();
-					index.addType(curToken, docID);
-					String stemmedToken = PorterStemmer.processToken(curToken);
-					index.addTerm(stemmedToken, docID, termPos);
-					termPos++;
+					if(curToken != null){
+						index.addType(curToken, docID);
+						System.out.println("HLL:" + curToken + file.getAbsolutePath());
+						String stemmedToken = PorterStemmer.processToken(curToken);
+						index.addTerm(stemmedToken, docID, termPos);
+						termPos++;
+					}
 				}
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void printResults(NaiveInvertedIndex index, 
 			List<String> fileNames) {
 
@@ -167,7 +174,7 @@ public class SearchEngine {
 			for(int k = 0; k < postings.size(); k++){
 				Integer docIndex = postings.get(k);	// get the document ID
 				List<Integer> positions = index.getTermPositions(termsList[j], docIndex);
-				
+
 				currentLine = currentLine + fileNames.get(docIndex) + "<";
 				for(int n = 0; n < positions.size(); n++){
 					currentLine = currentLine + positions.get(n) + ", ";
@@ -180,11 +187,11 @@ public class SearchEngine {
 			System.out.println(currentLine);
 		}
 	}
-	
+
 	private static void printStatistics(NaiveInvertedIndex index, List<String> fileNames){
 		double[] topFreq = index.getTopTermFreq();
 		DecimalFormat numForm = new DecimalFormat("#.00");
-		
+
 		System.out.println("Number of Types: " + index.getNumTypes());
 		System.out.println("Number of Terms: " + index.getNumTerms());
 		System.out.println("Average Number of Documents per Posting: " + numForm.format(index.getAvgPosts()));
@@ -194,11 +201,15 @@ public class SearchEngine {
 		}
 		System.out.println();
 		System.out.println("The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes");
-		
+
 	}
-	
-	
+
+
 	public static String getStatistics(){
+		return stats;
+	}
+
+	private static String runStatistics(NaiveInvertedIndex index){
 		String stats = new String();
 		DecimalFormat numForm = new DecimalFormat("#.00");
 		double[] topFreq = index.getTopTermFreq();
@@ -213,7 +224,7 @@ public class SearchEngine {
 		stats = stats + "The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes" + "\n\n";
 		return stats;
 	}
-	
+
 	//Stub for Query Processing
 	public static void processQuery(String word){
 		word = word.toLowerCase();
@@ -222,7 +233,7 @@ public class SearchEngine {
 		List<Integer> postings = index.getPostings(word);
 		results = new ArrayList<String>();
 		String currentLine = "";
-		System.out.printf("%-" + gloTermLength + "s %s",word+":", "");
+		//System.out.printf("%-" + gloTermLength + "s %s",word+":", "");
 		if(postings != null){
 			for(int docID : postings){
 				List<Integer> positions = index.getTermPositions(word, docID);
@@ -246,7 +257,7 @@ public class SearchEngine {
 	public static List<String> getqueryResult(){
 		return results;
 	}
-	
+
 	public static Path getPath(){
 		return curPath;
 	}
