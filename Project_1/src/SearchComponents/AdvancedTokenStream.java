@@ -30,7 +30,7 @@ public class AdvancedTokenStream implements TokenStream {
 	@Override
 	public boolean isHyphenatedToken(){
 		//Assuming the hyphen needs to be between two word chars to be a hyphenated token
-		if(mReader.hasNext(".*\\w+-+\\w+.*")){
+		if(mReader.hasNext(".*\\w+-\\w+.*")){
 			return true;
 		}
 		return false;

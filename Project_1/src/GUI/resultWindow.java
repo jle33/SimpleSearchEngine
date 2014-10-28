@@ -90,6 +90,7 @@ public class resultWindow extends JPanel {
 		list.addKeyListener(new KeyAdapter(){
 			@Override
 			public void keyPressed(KeyEvent e) {
+				// TODO Auto-generated method stub
 				if(e.getKeyCode() == KeyEvent.VK_ENTER){
 					int index = list.getSelectedIndex();
 					openSelectedFile(index);
@@ -102,6 +103,7 @@ public class resultWindow extends JPanel {
 		btnClose.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
 				if(e.getSource() == btnClose) {
 					//Figure out how to close just this window with the button
 					close();

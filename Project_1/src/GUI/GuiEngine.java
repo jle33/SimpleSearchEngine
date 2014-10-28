@@ -83,6 +83,8 @@ public class GuiEngine extends JFrame implements ActionListener {
 	private void initializeComponents() {
 		frmSearchEngine = new JFrame("Search Engine");
 		frmSearchEngine.setIconImage(Toolkit.getDefaultToolkit().getImage(GuiEngine.class.getResource(getImagePath())));
+		//ImageIcon img = new ImageIcon(GuiEngine.class.getResource("GoClongle.png"));
+		//frmSearchEngine.setIconImage(img.getImage());
 		frmSearchEngine.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmSearchEngine.getContentPane().setLayout(null);
 		frmSearchEngine.setBounds(150, 150, 977, 518);
