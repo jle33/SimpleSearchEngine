@@ -24,13 +24,6 @@ public class NaiveInvertedIndex {
 		totalIndexSize = 0;
 	}
 
-	// increments the number of documents encountered by the engine; use if including blank documents
-	/*
-	public void addDoc() {
-		numDocs++;		
-	}
-	*/
-	
 	// adds the type to a separate index for statistics
 	public void addType(String term) {
 
@@ -47,14 +40,14 @@ public class NaiveInvertedIndex {
 		// docID to the list, and put it into the map. Otherwise add the docID
 		// to the list that already exists in the map, but ONLY IF the list does
 		// not already contain the docID.
-		
+
 		// knows it is a new document if it is recording the term in position 0 of the document
 		if(positionID == 0){
 			numDocs++;
 		}
 
 		if(!mIndex.containsKey(term)){							// if do not have the term,
-																// create new list with current document ID to track documents containing the term
+			// create new list with current document ID to track documents containing the term
 			HashMap<Integer, List<Integer>> docList = new HashMap<Integer, List<Integer>>();
 			ArrayList<Integer> posList = new ArrayList<Integer>();
 			posList.add(positionID);
@@ -133,10 +126,10 @@ public class NaiveInvertedIndex {
 	}
 
 	// get number of documents in index
-		public int getNumDocs(){
-			return numDocs;
-		}
-		
+	public int getNumDocs(){
+		return numDocs;
+	}
+
 	// get the average number of posts per document
 	public double getAvgPosts(){
 		return avgPosts;
@@ -146,7 +139,7 @@ public class NaiveInvertedIndex {
 	public double[] getTopTermFreq(){	
 		return termFreq;
 	}
-	
+
 	// get the approximate byte size of the index
 	public int getTotalIndexSize(){
 		return totalIndexSize;

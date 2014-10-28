@@ -11,7 +11,6 @@ public class SearchEngine {
 
 	private static String stats;	// string representation of statistics
 	private static List<String> fileNames;
-	private static int gloTermLength;
 	private static List<String> results;
 	private static Path curPath;
 	private static int docCount;
@@ -22,11 +21,9 @@ public class SearchEngine {
 		final Path currentWorkingPath = setPath;
 		curPath = setPath;
 		// the Positional index
-		//final NaiveInvertedIndex index = new NaiveInvertedIndex();
 		index = new NaiveInvertedIndex();
 
 		// the list of file names that were processed
-		//final List<String> fileNames = new ArrayList<String>();
 		fileNames = new ArrayList<String>();
 
 		// This is our standard "walk through all .txt files" code.
@@ -48,9 +45,7 @@ public class SearchEngine {
 				if (file.toString().endsWith(".txt")) {
 					// we have found a .txt file; add its name to the fileName list,
 					// then index the file and increase the document ID counter.
-					//System.out.println("Indexing file " + file.getFileName() + " DocID " + mDocumentID);
 					fileNames.add(file.getFileName().toString());
-					//index.addDoc();
 					indexFile(file.toFile(), index, mDocumentID);
 					mDocumentID++;
 				}
@@ -67,8 +62,12 @@ public class SearchEngine {
 		});
 		index.finalize();
 		stats = runStatistics(index);
-		//printResults(index, fileNames);
-		//printStatistics(index, fileNames);
+		/**
+		 * For debugging
+		 * printResults(index, fileNames);
+		 * printStatistics(index, fileNames);
+		 */
+
 	}
 
 
@@ -154,8 +153,6 @@ public class SearchEngine {
 				maxTermLength = termsList[i].length();
 			}
 		}
-
-		gloTermLength = maxTermLength;
 
 		// print out the terms and the respective postings
 		for(int j = 0; j < termsList.length; j++){
@@ -244,8 +241,6 @@ public class SearchEngine {
 		return docResults;
 	}
 
-
-	//Stub for Query Processing
 	public static void processQuery(String word){
 		word = word.toLowerCase();
 		word = PorterStemmer.processToken(word);
@@ -253,7 +248,6 @@ public class SearchEngine {
 		List<Integer> postings = index.getPostings(word);
 		results = new ArrayList<String>();
 		String currentLine = "";
-		//System.out.printf("%-" + gloTermLength + "s %s",word+":", "");
 		if(postings != null){
 			for(int docID : postings){
 				List<Integer> positions = index.getTermPositions(word, docID);
@@ -268,7 +262,8 @@ public class SearchEngine {
 				System.out.print(currentLine + " ");
 			}
 			System.out.println("");
-		}else{
+		}
+		else{
 			System.out.println("");
 		}
 
