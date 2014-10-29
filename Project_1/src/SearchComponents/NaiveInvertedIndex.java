@@ -4,18 +4,18 @@ import java.util.*;
 
 public class NaiveInvertedIndex {
 	private HashMap<String, HashMap<Integer, List<Integer>>> mIndex;
-	private HashMap<String, List<Integer>> typeIndex;
+	private List<String> typeIndex;	// only for storing the types
 	private int numTypes;
 	private int numTerms;
 	private int numPosts;
 	private int numDocs;
 	private double avgPosts;
-	private double[] termFreq;
+	private double[] termFreq;			// stores up to 10 of the highest probability terms in directory
 	private int totalIndexSize;
 
 	public NaiveInvertedIndex() {
 		mIndex = new HashMap<String, HashMap<Integer, List<Integer>>>();
-		typeIndex = new HashMap<String, List<Integer>>();
+		typeIndex = new ArrayList<String>();
 		numTypes = 0;
 		numTerms = 0;
 		numPosts = 0;
@@ -24,35 +24,29 @@ public class NaiveInvertedIndex {
 		totalIndexSize = 0;
 	}
 
-	public void addType(String term, int documentID) {
+	// adds the type to a separate index for statistics
+	public void addType(String term) {
 
-		if(!typeIndex.containsKey(term)){
+		if(!typeIndex.contains(term)){
 			// create new list with current document ID to track documents containing the term
-			ArrayList<Integer> docList = new ArrayList<Integer>();
-			docList.add(documentID);
-
-			// add new document list mapped to the term 
-			typeIndex.put(term, docList);
-		}
-		else{
-			if(!typeIndex.get(term).contains(documentID)){
-				typeIndex.get(term).add(documentID);
-			}
+			typeIndex.add(term);
 		}
 	}
 
+	// adds the term, document, and/or position to the index
 	public void addTerm(String term, int documentID, int positionID) {
-		// TO-DO: add the term to the index hashtable. If the table does not have
+		// add the term to the index hashtable. If the table does not have
 		// an entry for the term, initialize a new ArrayList<Integer>, add the 
 		// docID to the list, and put it into the map. Otherwise add the docID
 		// to the list that already exists in the map, but ONLY IF the list does
 		// not already contain the docID.
-		
-		if(positionID == 1){
+
+		// knows it is a new document if it is recording the term in position 0 of the document
+		if(positionID == 0){
 			numDocs++;
 		}
 
-		if(!mIndex.containsKey(term)){							// do not have the term
+		if(!mIndex.containsKey(term)){							// if do not have the term,
 			// create new list with current document ID to track documents containing the term
 			HashMap<Integer, List<Integer>> docList = new HashMap<Integer, List<Integer>>();
 			ArrayList<Integer> posList = new ArrayList<Integer>();
@@ -75,8 +69,8 @@ public class NaiveInvertedIndex {
 		}
 	}
 
+	// return the postings list for the given term from the index map.
 	public List<Integer> getPostings(String term) {
-		// TO-DO: return the postings list for the given term from the index map.
 		if(!mIndex.containsKey(term)){
 			return null;
 		}
@@ -89,16 +83,13 @@ public class NaiveInvertedIndex {
 		}
 	}
 
+	// return the number of terms in the index.
 	public int getTermCount() {
-		// TO-DO: return the number of terms in the index.
-
 		return mIndex.size();
 	}
 
+	// return a sorted string array of all terms in the index
 	public String[] getDictionary() {
-		// TO-DO: fill an array of Strings with all the keys from the hashtable.
-		// Sort the array and return it.
-
 		// create set to hold set of all terms
 		Set<String> dictionarySet;
 		dictionarySet = mIndex.keySet();
@@ -111,6 +102,7 @@ public class NaiveInvertedIndex {
 		return termArray;
 	}
 
+	// returns a list of the positions of the given term in the given document
 	public List<Integer> getTermPositions(String givenTerm, int document) {
 		if((!mIndex.containsKey(givenTerm)) || (!mIndex.get(givenTerm).containsKey(document))){
 			return null;
@@ -133,6 +125,11 @@ public class NaiveInvertedIndex {
 		return numTerms;
 	}
 
+	// get number of documents in index
+	public int getNumDocs(){
+		return numDocs;
+	}
+
 	// get the average number of posts per document
 	public double getAvgPosts(){
 		return avgPosts;
@@ -142,12 +139,13 @@ public class NaiveInvertedIndex {
 	public double[] getTopTermFreq(){	
 		return termFreq;
 	}
-	
+
 	// get the approximate byte size of the index
 	public int getTotalIndexSize(){
 		return totalIndexSize;
 	}
 
+	// calculate the statistic for the Positional Inverted Index
 	public void finalize(){
 		numTypes = typeIndex.size();
 		numTerms = mIndex.size();
@@ -156,13 +154,10 @@ public class NaiveInvertedIndex {
 		// calculate the double array for the top terms proportions
 		PriorityQueue<Integer> setOfFreq = new PriorityQueue<Integer>();	// keeps size of top 10 postings
 		String[] listOfTerms = getDictionary();								// list of terms
-		//int tenthTerm = 0;													// keeps track of the tenth largest value
 
 		// for each term, get its size and add to the TreeSet of largest postings
 		for(int i = 0; i < listOfTerms.length; i++){
 			int postingSize = getPostings(listOfTerms[i]).size();
-			System.out.println("Current posting size: " + postingSize);
-			System.out.println("Current set of freq size: " + setOfFreq.size());
 
 			// check if the current posting is in the top 10
 			if(setOfFreq.size() >= 10){
@@ -194,22 +189,5 @@ public class NaiveInvertedIndex {
 				totalIndexSize = totalIndexSize + 48 + (4 * positions.size());
 			}
 		}
-
-		/*
-		totalIndexSize = totalIndexSize + 24 + (36 * mIndex.size()); 	// hashmap memory size						
-		for(int x = 0; x < listOfTerms.length; x++){
-			totalIndexSize = totalIndexSize + 40 + (2 * listOfTerms[x].length());		// terms memory size
-
-			List<Integer> posts = getPostings(listOfTerms[x]);
-			totalIndexSize = totalIndexSize + 24 + (8 * posts.size());			// postings list memory size
-
-			for(int y = 0; y < posts.size(); y++){
-				List<Integer> positions = getTermPositions(listOfTerms[x], posts.get(y));	// individual posting memory size
-				totalIndexSize = totalIndexSize + 48 + (4 * positions.size());
-			}
-		}
-		 */
-
 	}
-
 }

@@ -6,6 +6,7 @@ import java.awt.EventQueue;
 
 import javax.swing.JFrame;
 import javax.swing.JButton;
+
 import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -26,13 +27,16 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 
 import javax.swing.JTextField;
+
 import SearchComponents.SearchEngine;
+import SearchComponents.SyntaxCheck;
 
 import java.awt.Container;
 import java.awt.Font;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
@@ -79,19 +83,17 @@ public class GuiEngine extends JFrame implements ActionListener {
 	private void initializeComponents() {
 		frmSearchEngine = new JFrame("Search Engine");
 		frmSearchEngine.setIconImage(Toolkit.getDefaultToolkit().getImage(GuiEngine.class.getResource(getImagePath())));
-		//ImageIcon img = new ImageIcon(GuiEngine.class.getResource("GoClongle.png"));
-		//frmSearchEngine.setIconImage(img.getImage());
 		frmSearchEngine.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmSearchEngine.getContentPane().setLayout(null);
 		frmSearchEngine.setBounds(150, 150, 977, 518);
 		frmSearchEngine.setResizable(false);
-		
+
 		initializePanels();
 		initializeDirectoryComponenets();
 		initializeUserQueryComponents();
 		initializeIndexStatComponents();
 		initializeMainPanelComponenets();
-		
+
 		frmSearchEngine.getContentPane().add(mainPanel, BorderLayout.CENTER);
 		frmSearchEngine.setLocationRelativeTo(null);
 		frmSearchEngine.setVisible(true);
@@ -222,7 +224,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 		if(e.getSource() == btnIndex){
 			//Pass directory path to index all text files
 			Path path = Paths.get(directoryTextField.getText());
-			
+
 			try {
 				SearchEngine.indexDirectory(path.toAbsolutePath());
 			} catch (IOException e1) {
@@ -241,14 +243,16 @@ public class GuiEngine extends JFrame implements ActionListener {
 		else if(e.getSource() == btnChooseDirectory){
 			Path dirPath = getDirectory(frmSearchEngine);
 			directoryTextField.setText(dirPath.toString());
-			
+
 		}
 		//Handle search button
 		else if(e.getSource() == btnSearch){
+			//Process user query and view results
 			viewResults();
 		}
 		//Handle index statistics button
 		else if(e.getSource() == btnViewIndexStatistics){
+			indexStatWindow.setText(null);
 			indexStatWindow.append(directoryTextField.getText() + "\n");
 			indexStatWindow.append(SearchEngine.getStatistics());
 			switchPanels(indexStatisticsPanel, "indexStatistics_Panel");
@@ -273,22 +277,28 @@ public class GuiEngine extends JFrame implements ActionListener {
 		String imgPath = "/icon/GoClongle.png";
 		return imgPath;
 	}
-	
+
 	public void viewResults(){
-		String word = userQuery.getText();
-		SearchEngine.processQuery(word);
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				createResultWindow();
-			}
-		});
+		String query = userQuery.getText();
+		//SearchEngine.processQuery(word);
+		String status = SyntaxCheck.QuerySyntaxCheck(query);
+		if(status.equals("Ok")){
+			final List<String> queryResults = SearchEngine.processUserQuery(query);
+			javax.swing.SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					createResultWindow(queryResults);
+				}
+			});
+		}
+		else
+			JOptionPane.showMessageDialog(null, status, "Syntax Error", JOptionPane.INFORMATION_MESSAGE);
 	}
 
-	private void createResultWindow(){
-		JFrame frame = new JFrame("Results");
+	private void createResultWindow(List<String> queryResults){
+		JFrame frame = new JFrame("Results : " + SearchEngine.getDocCount());
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setIconImage(Toolkit.getDefaultToolkit().getImage(GuiEngine.class.getResource(getImagePath())));
-		JComponent contentPane = new resultWindow();
+		JComponent contentPane = new resultWindow(queryResults);
 		contentPane.setOpaque(true);
 		frame.setContentPane(contentPane);
 		frame.pack();

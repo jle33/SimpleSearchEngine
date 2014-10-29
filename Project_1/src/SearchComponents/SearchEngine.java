@@ -9,11 +9,11 @@ import java.util.*;
 
 public class SearchEngine {
 
-	private static String stats;
+	private static String stats;	// string representation of statistics
 	private static List<String> fileNames;
-	private static int gloTermLength;
 	private static List<String> results;
 	private static Path curPath;
+	private static int docCount;
 	private static NaiveInvertedIndex index;
 
 	public static void indexDirectory(Path setPath) throws IOException{
@@ -21,11 +21,9 @@ public class SearchEngine {
 		final Path currentWorkingPath = setPath;
 		curPath = setPath;
 		// the Positional index
-		//final NaiveInvertedIndex index = new NaiveInvertedIndex();
 		index = new NaiveInvertedIndex();
 
 		// the list of file names that were processed
-		//final List<String> fileNames = new ArrayList<String>();
 		fileNames = new ArrayList<String>();
 
 		// This is our standard "walk through all .txt files" code.
@@ -47,7 +45,6 @@ public class SearchEngine {
 				if (file.toString().endsWith(".txt")) {
 					// we have found a .txt file; add its name to the fileName list,
 					// then index the file and increase the document ID counter.
-					System.out.println("Indexing file " + file.getFileName() + " DocID " + mDocumentID);
 					fileNames.add(file.getFileName().toString());
 					indexFile(file.toFile(), index, mDocumentID);
 					mDocumentID++;
@@ -65,8 +62,12 @@ public class SearchEngine {
 		});
 		index.finalize();
 		stats = runStatistics(index);
-		//printResults(index, fileNames);
-		//printStatistics(index, fileNames);
+		/**
+		 * For debugging
+		 * printResults(index, fileNames);
+		 * printStatistics(index, fileNames);
+		 */
+
 	}
 
 
@@ -94,11 +95,10 @@ public class SearchEngine {
 				 */
 				String curToken;
 				if(readFile.isHyphenatedToken()){
-					System.out.println("In hypen");
 					curToken = readFile.nextHyphenToken();
 					//Remove hyphens from token, then add type and term to their respective index
 					String noHypenToken = curToken.replaceAll(" ", "");
-					index.addType(noHypenToken, docID);
+					index.addType(noHypenToken);
 					index.addTerm(noHypenToken, docID, termPos);
 					termPos++;
 					//Steps to process original token into two tokens without hyphen
@@ -106,7 +106,7 @@ public class SearchEngine {
 					while(readHyphenToken.hasNextToken()){
 						curToken = readHyphenToken.nextToken();
 						if(curToken != null){
-							index.addType(curToken, docID);
+							index.addType(curToken);
 							index.addTerm(PorterStemmer.processToken(curToken), docID, termPos);
 							termPos++;
 						}
@@ -114,8 +114,7 @@ public class SearchEngine {
 				}else{
 					curToken = readFile.nextToken();
 					if(curToken != null){
-						index.addType(curToken, docID);
-						System.out.println("HLL:" + curToken + file.getAbsolutePath());
+						index.addType(curToken);
 						String stemmedToken = PorterStemmer.processToken(curToken);
 						index.addTerm(stemmedToken, docID, termPos);
 						termPos++;
@@ -127,10 +126,10 @@ public class SearchEngine {
 		}
 	}
 
+	// print the inverted index
 	private static void printResults(NaiveInvertedIndex index, 
 			List<String> fileNames) {
 
-		// TO-DO: print the inverted index.
 		// Retrieve the dictionary from the index. (It will already be sorted.)
 		// For each term in the dictionary, retrieve the postings list for the
 		// term. Use the postings list to print the list of document names that
@@ -154,7 +153,7 @@ public class SearchEngine {
 				maxTermLength = termsList[i].length();
 			}
 		}
-		gloTermLength = maxTermLength;
+
 		// print out the terms and the respective postings
 		for(int j = 0; j < termsList.length; j++){
 			String currentLine = "";
@@ -188,6 +187,7 @@ public class SearchEngine {
 		}
 	}
 
+	// print out the statistics to console
 	private static void printStatistics(NaiveInvertedIndex index, List<String> fileNames){
 		double[] topFreq = index.getTopTermFreq();
 		DecimalFormat numForm = new DecimalFormat("#.00");
@@ -197,14 +197,16 @@ public class SearchEngine {
 		System.out.println("Average Number of Documents per Posting: " + numForm.format(index.getAvgPosts()));
 		System.out.print("The document frequencies of the top 10 terms are: ");
 		for(int x = 0; x < 10; x++){
-			System.out.print(numForm.format(topFreq[x] * 100) + "% ");
+			if(topFreq[x] != 0){
+				System.out.print(numForm.format(topFreq[x] * 100) + "% ");
+			}
 		}
 		System.out.println();
 		System.out.println("The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes");
 
 	}
 
-
+	// return the string representation of all the statistics
 	public static String getStatistics(){
 		return stats;
 	}
@@ -218,14 +220,27 @@ public class SearchEngine {
 		stats = stats + "Average Number of Documents per Posting: " + numForm.format(index.getAvgPosts()) + "\n";
 		stats = stats + "The document frequencies of the top 10 terms are: ";
 		for(int x = 0; x < 10; x++){
-			stats = stats + numForm.format(topFreq[x] * 100) + "% ";
+			if(topFreq[x] != 0){
+				stats = stats + numForm.format(topFreq[x] * 100) + "% ";
+			}
 		}
 		stats = stats + "\n";
 		stats = stats + "The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes" + "\n\n";
 		return stats;
 	}
 
-	//Stub for Query Processing
+	public static List<String> processUserQuery(String userQuery){
+		List<String> docResults = new ArrayList<String>();
+		List<Integer> docIDs = ProcessQuery.processQuery(index, fileNames, userQuery);
+		if(docIDs != null){
+			docCount = docIDs.size();
+			for(int curDocID : docIDs){
+				docResults.add(fileNames.get(curDocID));
+			}
+		}
+		return docResults;
+	}
+
 	public static void processQuery(String word){
 		word = word.toLowerCase();
 		word = PorterStemmer.processToken(word);
@@ -233,7 +248,6 @@ public class SearchEngine {
 		List<Integer> postings = index.getPostings(word);
 		results = new ArrayList<String>();
 		String currentLine = "";
-		//System.out.printf("%-" + gloTermLength + "s %s",word+":", "");
 		if(postings != null){
 			for(int docID : postings){
 				List<Integer> positions = index.getTermPositions(word, docID);
@@ -248,7 +262,8 @@ public class SearchEngine {
 				System.out.print(currentLine + " ");
 			}
 			System.out.println("");
-		}else{
+		}
+		else{
 			System.out.println("");
 		}
 
@@ -260,6 +275,10 @@ public class SearchEngine {
 
 	public static Path getPath(){
 		return curPath;
+	}
+
+	public static String getDocCount(){
+		return Integer.toString(docCount) + " Documents";
 	}
 
 }

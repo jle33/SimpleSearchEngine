@@ -14,6 +14,7 @@ import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -27,14 +28,13 @@ public class resultWindow extends JPanel {
 	private DefaultListModel<String> listModel;
 	private JButton btnClose;
 
-	public resultWindow() {
+	public resultWindow(List<String> results) {
 		setLayout(new BorderLayout());
 		listModel = new DefaultListModel<String>();
 		list = new JList<String>(listModel);
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setSelectedIndex(0);
 		listActions();
-		List<String> results = SearchEngine.getqueryResult();
 		list.setVisibleRowCount(results.size());
 
 		for(String docs : results) {
@@ -90,7 +90,6 @@ public class resultWindow extends JPanel {
 		list.addKeyListener(new KeyAdapter(){
 			@Override
 			public void keyPressed(KeyEvent e) {
-				// TODO Auto-generated method stub
 				if(e.getKeyCode() == KeyEvent.VK_ENTER){
 					int index = list.getSelectedIndex();
 					openSelectedFile(index);
@@ -103,10 +102,8 @@ public class resultWindow extends JPanel {
 		btnClose.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
 				if(e.getSource() == btnClose) {
 					//Figure out how to close just this window with the button
-					System.out.println("CLOSEING btnClose");
 					close();
 
 				}
