@@ -12,7 +12,7 @@ public class SyntaxCheck {
 
         int num = 0;
         String newS, temp;
-
+        int num2 = -1;
         ArrayList<String> arrL = new ArrayList<String>();
         newS = s;
 
