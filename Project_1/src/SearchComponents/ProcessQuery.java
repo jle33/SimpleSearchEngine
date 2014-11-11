@@ -9,7 +9,7 @@ import java.util.Map;
 public class ProcessQuery {
 
 
-	public static List<Integer> processQuery(NaiveInvertedIndex index, List<String> fileNames, String query) {
+	public static List<Integer> processQuery(PositionalInvertedIndex index, List<String> fileNames, String query) {
 		query = query.trim();
 		String delims = "";
 		String[] tokens;
@@ -18,7 +18,8 @@ public class ProcessQuery {
 		String posLit1 = "";
 		//2. a sequence of tokens that are within double quotes, phase query
 		List<String> posLit2 = new ArrayList<String>();
-
+		String[] posLiteral2; 
+		String[][] myOrList;
 		//take care of + (OR) when it sees + store in new queryLiteral
 		List<List<Integer>> OrList = new ArrayList<List<Integer>>();
 
@@ -38,9 +39,11 @@ public class ProcessQuery {
 					endPhrase = false;
 				}
 
+				//find 2nd "
 				if(tokens[i].substring(tokens[i].length()-1, tokens[i].length()).equals("\"")){
 					endPhrase = true;
 				}
+
 
 				if (isPhrase){
 					if (endPhrase){
@@ -61,6 +64,8 @@ public class ProcessQuery {
 				else {
 					posLit1 = tokens[i];
 					queryLiteral.put(posLit1, false);
+
+
 				}
 
 			}
@@ -89,7 +94,7 @@ public class ProcessQuery {
 		return result;
 	}
 
-	private static List<Integer> processQueryLiteral(NaiveInvertedIndex index, HashMap<String, Boolean> queryLiteral, List<String> fileNames){
+	private static List<Integer> processQueryLiteral(PositionalInvertedIndex index, HashMap<String, Boolean> queryLiteral, List<String> fileNames){
 		List<Integer> Q = new ArrayList<Integer>();
 		java.util.Iterator<String> it = queryLiteral.keySet().iterator();
 		while(it.hasNext()){
@@ -122,7 +127,16 @@ public class ProcessQuery {
 		return Q;
 	}
 
-	private static List<Integer> processPhrase(NaiveInvertedIndex index, String posLit2){
+	private static List<Integer> processToken(PositionalInvertedIndex index, String posLit1){
+		String token = posLit1.toLowerCase();
+		token = PorterStemmer.processToken(token);
+		List<Integer> postings = index.getPostings(token);
+
+		return postings;
+	}
+
+
+	private static List<Integer> processPhrase(PositionalInvertedIndex index, String posLit2){
 		List<Integer> docIDs = new ArrayList<Integer>();
 		AdvancedTokenStream readText;
 		String token;
@@ -189,6 +203,7 @@ public class ProcessQuery {
 		int docID_2 = -1;
 
 		do{
+			System.out.println("Looping");
 			// set up the documents to compare
 			if(docID_1 == -1){		// required for initial assignment 
 				if(it1.hasNext()){				
@@ -208,7 +223,7 @@ public class ProcessQuery {
 					docID_2 = it2.next();
 				}
 			}
-			else if((docID_1 != docID_2) && (!it1.hasNext() || !it2.hasNext()) ){
+			else if((!it1.hasNext() || !it2.hasNext()) ){
 				return mergedList; 
 			}
 
@@ -258,34 +273,34 @@ public class ProcessQuery {
 		return mergedList;
 	}
 
-	private static List<Integer> processToken(NaiveInvertedIndex index, String posLit1){
-		String token = posLit1.toLowerCase();
-		token = PorterStemmer.processToken(token);
-		List<Integer> postings = index.getPostings(token);
+	//TO-DO change to take in arrays only need to Build the Index First
+	private static List<Integer> AndMerge(List<Integer> p11, List<Integer> p22){
+		Integer[] mergedP;
+		Collections.sort(p11);
+		Collections.sort(p22);
 
-		return postings;
-	}
+		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
+		Integer[] p2 = p22.toArray(new Integer[p22.size()]);
 
-	private static List<Integer> AndMerge(List<Integer> p1, List<Integer> p2){
-		List<Integer> mergedP = new ArrayList<Integer>();
-		Collections.sort(p1);
-		Collections.sort(p2);
+		int size = 0;
+		if(p1.length < p2.length){
+			size = p1.length;
+		}else {
+			size = p2.length;
+		}
+		mergedP = new Integer[size];
+
 		int i = 0;
 		int j = 0;
+		int mergedCounter = 0;
 		int doc1 = -1;
 		int doc2 = -1;
 
-		while (true){
-			if (i >= p1.size()){
-				break;
-			}
-			else if ( j>= p2.size()){
-				break;
-			}
-			doc1 = p1.get(i);
-			doc2 = p2.get(j);
+		while (mergedCounter < mergedP.length){
+			doc1 = p1[i];
+			doc2 = p2[j];
 			if (doc1 == doc2){
-				mergedP.add(doc1);
+				mergedP[mergedCounter++] = doc1;
 				i++;
 				j++;
 			}
@@ -296,41 +311,52 @@ public class ProcessQuery {
 				i++;
 			}
 		}
-		return mergedP;
+
+		//Temp conversion -DELETE ME
+		List<Integer> temp = new ArrayList<Integer>();
+		for(int i1 : mergedP){
+			temp.add(i1);
+		}
+
+		return temp;
 	}
 
-	private static List<Integer> OrMerge(List<Integer> p1, List<Integer> p2){
-		List<Integer> mergedP = new ArrayList<Integer>();
-		Collections.sort(p1);
-		Collections.sort(p2);
+	//TO-DO change to take in arrays only need to Build the Index First
+	private static List<Integer> OrMerge(List<Integer> p11, List<Integer> p22){
+		Integer[] mergedP;
+		Collections.sort(p11);
+		Collections.sort(p22);
+		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
+		Integer[] p2 = p22.toArray(new Integer[p22.size()]);
 
-		if (p1 == null){
-			return p2;
+		int size = 0;
+		if(p1.length > p2.length){
+			size = p1.length;
+		}else {
+			size = p2.length;
 		}
-		else if(p2 == null){
-			return p1;
-		}
-		
+		mergedP = new Integer[size];
+
 		int i = 0;
 		int j = 0;
+		int mergedCounter = 0;
 		int doc1 = -1;
 		int doc2 = -1;
-		
 		while(true){
-			if(i < p1.size() && j < p2.size()){
-				doc1 = p1.get(i);
-				doc2 = p2.get(j);
+			if(i < p1.length && j < p2.length){
+				doc1 = p1[i];
+				doc2 = p2[j];
 			}
-			if(i >= p1.size()){
-				while(j < p2.size()){
-					mergedP.add(doc2);
+			if(i >= p1.length){
+				while(j < p2.length){
+					mergedP[mergedCounter++] = p2[j];
 					j++;
 				}
 				break;
 			}
-			else if(j >= p2.size()){
-				while(i < p1.size()){
-					mergedP.add(doc1);
+			else if(j >= p2.length){
+				while(i < p1.length){
+					mergedP[mergedCounter++] = p1[i];
 					i++;
 				}
 				break;
@@ -338,25 +364,29 @@ public class ProcessQuery {
 			else{
 
 				if(doc1 == doc2){
-					mergedP.add(doc1);
+					mergedP[mergedCounter++] = doc1;
 					i++;
 					j++;
 				}
 				else if(doc1 > doc2){
-					mergedP.add(doc2);
+					mergedP[mergedCounter++] = doc2;
 					j++;
 				}
 				else {
-					mergedP.add(doc1);
+					mergedP[mergedCounter++] = doc1;
 					i++;
 				}
 			}
 		}
-		return mergedP;
+
+		//Temp conversion -DELETE ME
+		List<Integer> temp = new ArrayList<Integer>();
+		for(int i1 : mergedP){
+			temp.add(i1);
+		}
+		return temp;
 	}
 }
-
-
 
 
 
