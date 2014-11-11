@@ -334,6 +334,11 @@ public class ProcessQuery {
 	//TO-DO change to take in arrays only need to Build the Index First
 	private static List<Integer> OrMerge(List<Integer> p11, List<Integer> p22){
 		Integer[] mergedP;
+		if(p11 == null){
+			return p22;
+		}else if(p22 == null){
+			return p11;
+		}
 		Collections.sort(p11);
 		Collections.sort(p22);
 		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
