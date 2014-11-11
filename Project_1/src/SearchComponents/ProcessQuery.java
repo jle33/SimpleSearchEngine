@@ -97,30 +97,35 @@ public class ProcessQuery {
 	private static List<Integer> processQueryLiteral(PositionalInvertedIndex index, HashMap<String, Boolean> queryLiteral, List<String> fileNames){
 		List<Integer> Q = new ArrayList<Integer>();
 		java.util.Iterator<String> it = queryLiteral.keySet().iterator();
+		String str = null;
+		List<Integer> docList;
+		if(it.hasNext()){
+			str = it.next();
+		}
+		
+		if(queryLiteral.get(str) == true){
+			 docList = processPhrase(index, str);
+			 Q = docList;
+		}else{
+			docList = processToken(index, str);
+			Q = docList;
+		}
 		while(it.hasNext()){
-			String str = it.next();
+			str = it.next();
 			if(queryLiteral.get(str) == true){
-				List<Integer> docList = processPhrase(index, str);
+				docList = processPhrase(index, str);
 				if(docList == null){
 					return null;
 				}
-				if(Q.isEmpty()){
-					Q = docList;
-				}else {
-					Q = AndMerge(Q, docList);
-				}
+				Q = AndMerge(Q, docList);
+				
 			}
 			else if(queryLiteral.get(str) == false){
-				List<Integer> docList = processToken(index, str);
+				docList = processToken(index, str);
 				if (docList == null){
 					return null;
 				}
-				if (Q.isEmpty()){
-					Q = docList;
-				}
-				else {
-					Q = AndMerge(Q, docList);
-				}
+				Q = AndMerge(Q, docList);
 			}
 		}
 
@@ -203,7 +208,7 @@ public class ProcessQuery {
 		int docID_2 = -1;
 
 		do{
-			System.out.println("Looping");
+			//System.out.println("Looping");
 			// set up the documents to compare
 			if(docID_1 == -1){		// required for initial assignment 
 				if(it1.hasNext()){				
@@ -278,7 +283,6 @@ public class ProcessQuery {
 		Integer[] mergedP;
 		Collections.sort(p11);
 		Collections.sort(p22);
-
 		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
 		Integer[] p2 = p22.toArray(new Integer[p22.size()]);
 
@@ -295,8 +299,8 @@ public class ProcessQuery {
 		int mergedCounter = 0;
 		int doc1 = -1;
 		int doc2 = -1;
-
-		while (mergedCounter < mergedP.length){
+		
+		while (i < p1.length && j < p2.length){
 			doc1 = p1[i];
 			doc2 = p2[j];
 			if (doc1 == doc2){
@@ -311,11 +315,17 @@ public class ProcessQuery {
 				i++;
 			}
 		}
-
+		if(mergedCounter < mergedP.length){
+			mergedP[mergedCounter] = -1;
+		}
 		//Temp conversion -DELETE ME
 		List<Integer> temp = new ArrayList<Integer>();
-		for(int i1 : mergedP){
-			temp.add(i1);
+		for(int i1 = 0; i1 < mergedP.length; i1++){
+			if(mergedP[i1] != -1){
+				temp.add(mergedP[i1]);
+			}else {
+				break;
+			}
 		}
 
 		return temp;
@@ -329,12 +339,8 @@ public class ProcessQuery {
 		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
 		Integer[] p2 = p22.toArray(new Integer[p22.size()]);
 
-		int size = 0;
-		if(p1.length > p2.length){
-			size = p1.length;
-		}else {
-			size = p2.length;
-		}
+		int size = p1.length + p2.length;
+
 		mergedP = new Integer[size];
 
 		int i = 0;
@@ -347,6 +353,7 @@ public class ProcessQuery {
 				doc1 = p1[i];
 				doc2 = p2[j];
 			}
+			
 			if(i >= p1.length){
 				while(j < p2.length){
 					mergedP[mergedCounter++] = p2[j];
@@ -362,7 +369,6 @@ public class ProcessQuery {
 				break;
 			}
 			else{
-
 				if(doc1 == doc2){
 					mergedP[mergedCounter++] = doc1;
 					i++;
@@ -379,10 +385,17 @@ public class ProcessQuery {
 			}
 		}
 
+		if(mergedCounter < mergedP.length){
+			mergedP[mergedCounter] = -1;
+		}
 		//Temp conversion -DELETE ME
 		List<Integer> temp = new ArrayList<Integer>();
-		for(int i1 : mergedP){
-			temp.add(i1);
+		for(int i1 = 0; i1 < mergedP.length; i1++){
+			if(mergedP[i1] != -1){
+				temp.add(mergedP[i1]);
+			}else{
+				break;
+			}
 		}
 		return temp;
 	}
