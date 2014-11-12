@@ -215,11 +215,15 @@ public class ProcessQuery {
 			else if(docID_1 < docID_2){
 				if(it1.hasNext()){
 					docID_1 = it1.next();
+				}else {
+					return mergedList;
 				}
 			}
 			else if(docID_1 > docID_2){
 				if(it2.hasNext()){
 					docID_2 = it2.next();
+				}else {
+					return mergedList;
 				}
 			}
 			else if((!it1.hasNext() || !it2.hasNext()) ){
