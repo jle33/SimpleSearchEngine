@@ -230,14 +230,12 @@ public class SearchEngine {
 	}
 
 	public static List<String> processUserQuery(String userQuery){
-		List<String> docResults = new ArrayList<String>(); //FileNames
-		
+		List<String> docResults = new ArrayList<String>();
 		List<Integer> docIDs = ProcessQuery.processQuery(index, fileNames, userQuery);
-		
 		if(docIDs != null){
 			docCount = docIDs.size();
 			for(int curDocID : docIDs){
-				docResults.add(fileNames.get(curDocID)); //Add found filename to list
+				docResults.add(fileNames.get(curDocID));
 			}
 		}
 		return docResults;
