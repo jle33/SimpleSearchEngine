@@ -13,6 +13,9 @@ public class SyntaxCheck {
         int num = 0;
         String newS, temp;
         int lolking = 0;
+        if(lolking == 0){
+        	System.out.println("COOLI");
+        }
         int num2 = -1;
         int num3 = -1;
         int num5 = -1;
