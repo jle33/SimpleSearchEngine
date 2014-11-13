@@ -13,5 +13,4 @@ INDEX VERSION 1.127+C:\Users\James Le\Documents\GitHub\SimpleSearchEngine\.metad
 163172794.index
 3133528496.index
 3974580528.index
-1870499922.index
 3065916431.index
