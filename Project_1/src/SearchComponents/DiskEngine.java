@@ -17,7 +17,10 @@ public class DiskEngine {
 		if(docIDs != null){
 			docCount = docIDs.length;
 			for(int curDocID : docIDs){
-				docResults.add(fileNames.get(curDocID)); //Add found filename to list
+				if(curDocID == -1){
+					break;
+				}
+				docResults.add(index.getFileNames().get(curDocID)); //Add found filename to list
 			}
 		}
 		return docResults;

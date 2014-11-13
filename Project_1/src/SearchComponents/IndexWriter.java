@@ -83,7 +83,8 @@ public class IndexWriter {
          for (String s : dictionary) {
             // for each String in dictionary, retrieve its postings.
             List<Integer> postings = index.getPostings(s);
-
+            //Sort postings
+            Collections.sort(postings);
             // write the vocab table entry for this term: the byte location of the term in the vocab list file,
             // and the byte location of the postings for the term in the postings file.
             byte[] vPositionBytes = ByteBuffer.allocate(8)
@@ -102,12 +103,16 @@ public class IndexWriter {
 
             int lastDocId = 0;
             for (int docId : postings) {
+            	if(docId < lastDocId){
+            		System.out.println("ERROR NOT IN ORDER docIDs: " + docId + " and prev " + lastDocId);
+            	}
                byte[] docIdBytes = ByteBuffer.allocate(4)
                 .putInt(docId - lastDocId).array(); // encode a gap, not a doc ID
 
                postingsFile.write(docIdBytes, 0, docIdBytes.length);
                lastDocId = docId;
                
+              
                //Add posFreq than positions
                List<Integer> positions = index.getTermPositions(s, docId);
                byte[] posFreqBytes = ByteBuffer.allocate(4)
@@ -117,6 +122,9 @@ public class IndexWriter {
                //Add positions using gaps instead
                int lastPosID = 0;
                for(int posID : positions){
+            	   if(posID < lastPosID){
+               		System.out.println("ERROR NOT IN ORDER termPos: " + posID + " and prev " + lastPosID);
+               	}
             	   byte[] curPosBytes = ByteBuffer.allocate(4)
             	    .putInt(posID - lastPosID).array();
             	   

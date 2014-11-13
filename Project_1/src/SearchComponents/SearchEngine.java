@@ -228,7 +228,7 @@ public class SearchEngine {
 		stats = stats + "The approximate total memory requirements is: " + index.getTotalIndexSize() + " bytes" + "\n\n";
 		return stats;
 	}
-
+	/*
 	public static List<String> processUserQuery(String userQuery){
 		List<String> docResults = new ArrayList<String>(); //FileNames
 		
@@ -242,7 +242,7 @@ public class SearchEngine {
 		}
 		return docResults;
 	}
-
+*/
 	public static void processQuery(String word){
 		word = word.toLowerCase();
 		word = PorterStemmer.processToken(word);
@@ -275,6 +275,10 @@ public class SearchEngine {
 		return results;
 	}
 
+	public static void setPath(Path path){
+		SearchEngine.curPath = path;
+	}
+	
 	public static Path getPath(){
 		return curPath;
 	}

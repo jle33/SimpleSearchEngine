@@ -11,7 +11,6 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -23,28 +22,21 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Toolkit;
 
 import javax.swing.JTextField;
 
 import SearchComponents.DiskEngine;
-import SearchComponents.DiskPositionalIndex;
 import SearchComponents.IndexWriter;
 import SearchComponents.SearchEngine;
 import SearchComponents.SyntaxCheck;
 
-import java.awt.Container;
 import java.awt.Font;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import javax.swing.SwingConstants;
-import com.jgoodies.forms.factories.DefaultComponentFactory;
-import javax.swing.JProgressBar;
 
 
 public class GuiEngine extends JFrame implements ActionListener {
@@ -154,7 +146,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 		MainScreenLogo.setBounds(351, 78, 263, 108);
 		mainMenuPanel.add(MainScreenLogo);
 		
-		JLabel lbMainMenu = DefaultComponentFactory.getInstance().createLabel("Menu");
+		JLabel lbMainMenu = new JLabel("Menu");
 		lbMainMenu.setFont(new Font("Times New Roman", Font.PLAIN, 20));
 		lbMainMenu.setBounds(453, 203, 44, 27);
 		mainMenuPanel.add(lbMainMenu);
@@ -179,6 +171,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 			public void actionPerformed(ActionEvent arg0) {
 				Path dirPath = getDirectory(frmSearchEngine);
 				dirTextField_ReadIndex.setText(dirPath.toString());
+				SearchEngine.setPath(dirPath);
 			}
 		});
 		btnChooseDirectoryToRead.setBounds(348, 242, 128, 26);
@@ -187,7 +180,8 @@ public class GuiEngine extends JFrame implements ActionListener {
 		btnReadIndex = new JButton("Read Index");
 		btnReadIndex.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				String indexName = directoryTextField.getText();
+				String indexName = dirTextField_ReadIndex.getText();
+				System.out.println(indexName);
 				DiskEngine.setDiskPositionalIndex(indexName);
 				switchPanels(userQueryPanel, "userQuery_Panel");
 			}
@@ -360,7 +354,8 @@ public class GuiEngine extends JFrame implements ActionListener {
 		}
 		//Handle back button
 		else if(e.getSource() == btnBack){
-			switchPanels(directoryPanel, "directory_Panel");
+			//switchPanels(directoryPanel, "directory_Panel");
+			switchPanels(ReadIndexPanel, "ReadIndex_Panel");
 		}
 		//Handle choose directory button
 		else if(e.getSource() == btnChooseDirectoryToIndex){
@@ -413,7 +408,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 		//SearchEngine.processQuery(word);
 		String status = SyntaxCheck.QuerySyntaxCheck(query);
 		if(status.equals("Ok")){
-			final List<String> queryResults = SearchEngine.processUserQuery(query);
+			final List<String> queryResults = DiskEngine.processUserQuery(query);
 			javax.swing.SwingUtilities.invokeLater(new Runnable() {
 				public void run() {
 					createResultWindow(queryResults);
@@ -425,7 +420,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 	}
 
 	private void createResultWindow(List<String> queryResults){
-		JFrame frame = new JFrame("Results : " + SearchEngine.getDocCount());
+		JFrame frame = new JFrame("Results : " + queryResults.size());
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frame.setIconImage(Toolkit.getDefaultToolkit().getImage(GuiEngine.class.getResource(getImagePath())));
 		JComponent contentPane = new resultWindow(queryResults);

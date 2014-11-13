@@ -86,6 +86,76 @@ public class DiskPositionalIndex {
       }
       return null;
    }
+   
+   private static termPostingList[] readPostingsPositionsFromFile(RandomAccessFile postings, 
+		    long postingsPosition) {
+		      try {
+		         // seek to the position in the file where the postings start.
+		         postings.seek(postingsPosition);
+		         
+		         // read the 4 bytes for the document frequency
+		         byte[] buffer = new byte[4];
+		         postings.read(buffer, 0, buffer.length);
+
+		         // use ByteBuffer to convert the 4 bytes into an int.
+		         int documentFrequency = ByteBuffer.wrap(buffer).getInt();
+		         
+		         // initialize the array that will hold the postings. 
+		         termPostingList[] docIds = new termPostingList[documentFrequency];
+		         
+		         // write the following code:
+		         // read 4 bytes at a time from the file, until you have read as many
+		         //    postings as the document frequency promised.
+		         //    
+		         // after each read, convert the bytes to an int posting. this value
+		         //    is the GAP since the last posting. decode the document ID from
+		         //    the gap and put it in the array.
+		         //
+		         // repeat until all postings are read.
+		         
+		         int curGap = 0; //First gap is 0
+		         for(int i = 0; i < documentFrequency; i++){
+		        	 postings.read(buffer,0, buffer.length);
+		        	 int docID = ByteBuffer.wrap(buffer).getInt() + curGap;
+		        	 curGap = docID;
+		        	 docIds[i] = new termPostingList();
+		        	 docIds[i].setDocID(docID);
+		        	 
+		             // read the 4 bytes for the position frequency
+		             postings.read(buffer, 0, buffer.length);
+		             
+		             // use ByteBuffer to convert the 4 bytes to an int representing the position frequency
+		             int termFreq = ByteBuffer.wrap(buffer).getInt();
+		             docIds[i].positions = new int[termFreq];
+		             docIds[i].setTermFreq();
+		             
+		             // Loop through all the positions in document and decode
+		             int curPosGap = 0;
+		             for(int j = 0; j < termFreq; j++){
+		            	 postings.read(buffer, 0, buffer.length);
+		            	 int pos = ByteBuffer.wrap(buffer).getInt() + curPosGap;
+		            	 curPosGap = pos;
+		            	 docIds[i].positions[j] = pos;
+		             }
+		         }
+		         
+		         
+		         return docIds;
+		      }
+		      catch (IOException ex) {
+		         System.out.println(ex.toString());
+		      }
+		      return null;
+		   }
+   
+   public termPostingList[] GetPostingsPositions(String term){
+	   long postingsPosition = BinarySearchVocabulary(term);
+	      if (postingsPosition >= 0) {
+	         return readPostingsPositionsFromFile(mPostings, postingsPosition);
+	      }
+	   return null;
+   }
+   
 
    private long BinarySearchVocabulary(String term) {
       // do a binary search over the vocabulary, using the vocabTable and the file vocabList.
