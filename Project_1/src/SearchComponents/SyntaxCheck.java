@@ -12,6 +12,7 @@ public class SyntaxCheck {
 
         int num = 0;
         String newS, temp;
+        int lolking = 0;
         int num2 = -1;
         int num3 = -1;
         int num5 = -1;
