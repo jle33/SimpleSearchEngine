@@ -213,8 +213,8 @@ public class ProcessQuery {
 				//Keep track of the current positions;
 				int posCount = 0;
 				while(c < pp1.length && l < pp2.length){
-					int pos1 = pp1[c];
-					int pos2 = pp2[l];
+					int pos1 = pp1[c]; //posting's position for term 1
+					int pos2 = pp2[l]; //posting's position for term 2
 					//check if pos1 is less than pos2
 					if(pos1 < pos2){
 						//check for offset of k
