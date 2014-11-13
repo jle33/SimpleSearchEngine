@@ -14,7 +14,7 @@ public class SyntaxCheck {
         String newS, temp;
         int num2 = -1;
         int num3 = -1;
-        int num5 = -1;
+        int num5 = -3;
         ArrayList<String> arrL = new ArrayList<String>();
         newS = s;
 
