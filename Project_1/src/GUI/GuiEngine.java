@@ -94,7 +94,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 		frmSearchEngine.getContentPane().setLayout(null);
 		frmSearchEngine.setBounds(150, 150, 977, 518);
 		frmSearchEngine.setResizable(false);
-		System.out.println("DEBUG" + "Retry" + "NOPE NOPE NOPE");
+		System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW NOPE");
 		initializePanels();
 		initializeDirectoryComponenets();
 		initializeUserQueryComponents();
