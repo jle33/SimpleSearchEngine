@@ -99,6 +99,11 @@ public class GuiEngine extends JFrame implements ActionListener {
 		initializeUserQueryComponents();
 		initializeIndexStatComponents();
 		initializeMainPanelComponenets();
+		int aasdf = -1;
+		int[] abc = new int[20];
+		for(int i = 0; i < 20; i++){
+			abc[i] = aasdf;
+		}
 		System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW no can do NOPE");
 		frmSearchEngine.getContentPane().add(mainPanel, BorderLayout.CENTER);
 		frmSearchEngine.setLocationRelativeTo(null);
