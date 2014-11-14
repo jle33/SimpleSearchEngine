@@ -112,12 +112,13 @@ public class GuiEngine extends JFrame implements ActionListener {
 		directoryTextField = new JTextField();
 		userQueryPanel = new JPanel();
 		indexStatisticsPanel = new JPanel();
+		System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW NOPE");
 	}
 
 	private void initializeMainPanelComponenets(){
 		mainPanel.setBounds(0, 0, 971, 490);
 		mainPanel.setLayout(new CardLayout());
-		
+		System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW NOPE");
 		mainMenuPanel = new JPanel();
 		mainPanel.add(mainMenuPanel, "name_31040754599711");
 		mainMenuPanel.setLayout(null);
@@ -150,7 +151,7 @@ public class GuiEngine extends JFrame implements ActionListener {
 		lbMainMenu.setFont(new Font("Times New Roman", Font.PLAIN, 20));
 		lbMainMenu.setBounds(453, 203, 44, 27);
 		mainMenuPanel.add(lbMainMenu);
-
+		System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW NOPE");
 		
 		ReadIndexPanel = new JPanel();
 		ReadIndexPanel.setLayout(null);
@@ -197,7 +198,9 @@ public class GuiEngine extends JFrame implements ActionListener {
 		});
 		btnReadIndexToMainMenu.setBounds(0, 0, 89, 23);
 		ReadIndexPanel.add(btnReadIndexToMainMenu);
-		
+		if(true){
+			System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW NOPE");
+		}
 		//Add panels to main panel
 		mainPanel.add(mainMenuPanel, "mainMenu_Panel");
 		mainPanel.add(directoryPanel, "directory_Panel");
