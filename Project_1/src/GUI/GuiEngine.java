@@ -200,9 +200,6 @@ public class GuiEngine extends JFrame implements ActionListener {
 		});
 		btnReadIndexToMainMenu.setBounds(0, 0, 89, 23);
 		ReadIndexPanel.add(btnReadIndexToMainMenu);
-		if(true){
-			System.out.println("DEBUG" + "Retry" + "Retry" + "NEW NEW NOPE");
-		}
 		//Add panels to main panel
 		mainPanel.add(mainMenuPanel, "mainMenu_Panel");
 		mainPanel.add(directoryPanel, "directory_Panel");
