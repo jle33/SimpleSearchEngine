@@ -14,14 +14,14 @@ public class SearchEngine {
 	private static List<String> results;
 	private static Path curPath;
 	private static int docCount;
-	private static NaiveInvertedIndex index;
+	private static PositionalInvertedIndex index;
 
 	public static void indexDirectory(Path setPath) throws IOException{
 
 		final Path currentWorkingPath = setPath;
 		curPath = setPath;
 		// the Positional index
-		index = new NaiveInvertedIndex();
+		index = new PositionalInvertedIndex();
 
 		// the list of file names that were processed
 		fileNames = new ArrayList<String>();
@@ -81,7 +81,7 @@ public class SearchEngine {
 	   @param docID the integer ID of the current document, needed when indexing
 	   each term from the document.
 	 */
-	private static void indexFile(File file, NaiveInvertedIndex index, 
+	private static void indexFile(File file, PositionalInvertedIndex index, 
 			int docID) {
 		// Construct a SimpleTokenStream for the given File.
 		// Read each token from the stream and add it to the index.
@@ -127,7 +127,7 @@ public class SearchEngine {
 	}
 
 	// print the inverted index
-	private static void printResults(NaiveInvertedIndex index, 
+	private static void printResults(PositionalInvertedIndex index, 
 			List<String> fileNames) {
 
 		// Retrieve the dictionary from the index. (It will already be sorted.)
@@ -188,7 +188,7 @@ public class SearchEngine {
 	}
 
 	// print out the statistics to console
-	private static void printStatistics(NaiveInvertedIndex index, List<String> fileNames){
+	private static void printStatistics(PositionalInvertedIndex index, List<String> fileNames){
 		double[] topFreq = index.getTopTermFreq();
 		DecimalFormat numForm = new DecimalFormat("#.00");
 
@@ -211,7 +211,7 @@ public class SearchEngine {
 		return stats;
 	}
 
-	private static String runStatistics(NaiveInvertedIndex index){
+	private static String runStatistics(PositionalInvertedIndex index){
 		String stats = new String();
 		DecimalFormat numForm = new DecimalFormat("#.00");
 		double[] topFreq = index.getTopTermFreq();

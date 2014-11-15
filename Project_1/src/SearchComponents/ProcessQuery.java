@@ -9,7 +9,7 @@ import java.util.Map;
 public class ProcessQuery {
 
 
-	public static List<Integer> processQuery(NaiveInvertedIndex index, List<String> fileNames, String query) {
+	public static List<Integer> processQuery(PositionalInvertedIndex index, List<String> fileNames, String query) {
 		query = query.trim();
 		String delims = "";
 		String[] tokens;
@@ -18,7 +18,8 @@ public class ProcessQuery {
 		String posLit1 = "";
 		//2. a sequence of tokens that are within double quotes, phase query
 		List<String> posLit2 = new ArrayList<String>();
-
+		String[] posLiteral2; 
+		String[][] myOrList;
 		//take care of + (OR) when it sees + store in new queryLiteral
 		List<List<Integer>> OrList = new ArrayList<List<Integer>>();
 
@@ -31,36 +32,41 @@ public class ProcessQuery {
 		boolean endPhrase = true;
 		boolean isOr = false;
 		for (int i = 0; i < tokens.length; i++) {
-			if(!tokens[i].equals("+")){
+			String tokenStr = tokens[i];
+			if(!tokenStr.equals("+")){
 				//find first "
-				if(tokens[i].substring(0, 1).equals("\"")){
+				if(tokenStr.substring(0, 1).equals("\"") || tokenStr.substring(1, 2).equals("\"")){
 					isPhrase = true;
 					endPhrase = false;
 				}
 
-				if(tokens[i].substring(tokens[i].length()-1, tokens[i].length()).equals("\"")){
+				//find 2nd "
+				if(tokenStr.substring(tokenStr.length()-1, tokenStr.length()).equals("\"")){
 					endPhrase = true;
 				}
+
 
 				if (isPhrase){
 					if (endPhrase){
 						isPhrase = false;
-						posLit2.add(tokens[i]);
+						posLit2.add(tokenStr);
 						String phrase = "";
 						for(String str : posLit2){
 							phrase = phrase + " " + str;
 						}
-						queryLiteral.put(phrase, true);
+						queryLiteral.put(phrase.trim(), true);
 						posLit2 = new ArrayList<String>();
 					}
 					else {
-						posLit2.add(tokens[i]);
+						posLit2.add(tokenStr);
 					}
 
 				}
 				else {
-					posLit1 = tokens[i];
-					queryLiteral.put(posLit1, false);
+					posLit1 = tokenStr;
+					queryLiteral.put(posLit1.trim(), false);
+
+
 				}
 
 			}
@@ -89,40 +95,78 @@ public class ProcessQuery {
 		return result;
 	}
 
-	private static List<Integer> processQueryLiteral(NaiveInvertedIndex index, HashMap<String, Boolean> queryLiteral, List<String> fileNames){
+	private static List<Integer> processQueryLiteral(PositionalInvertedIndex index, HashMap<String, Boolean> queryLiteral, List<String> fileNames){
 		List<Integer> Q = new ArrayList<Integer>();
 		java.util.Iterator<String> it = queryLiteral.keySet().iterator();
+		String str = null;
+		List<Integer> docList;
+		List<List<Integer>> notList = new ArrayList<List<Integer>>();
+		
 		while(it.hasNext()){
-			String str = it.next();
+			str = it.next();
+			if(str.startsWith("-")){
+				if(queryLiteral.get(str) == true){
+					docList = processPhrase(index, str);
+				} else {
+					docList = processToken(index, str);
+				}
+				notList.add(docList);
+			} else {
+				break;
+			}
+		}
+		
+		if(queryLiteral.get(str) == true){
+			 docList = processPhrase(index, str);
+			 Q = docList;
+		}else{
+			docList = processToken(index, str);
+			Q = docList;
+		}
+		while(it.hasNext()){
+			str = it.next();
 			if(queryLiteral.get(str) == true){
-				List<Integer> docList = processPhrase(index, str);
+				docList = processPhrase(index, str);
 				if(docList == null){
 					return null;
 				}
-				if(Q.isEmpty()){
-					Q = docList;
-				}else {
+				if(str.startsWith("-")){
+					notList.add(docList);
+				} else {
 					Q = AndMerge(Q, docList);
 				}
 			}
 			else if(queryLiteral.get(str) == false){
-				List<Integer> docList = processToken(index, str);
+				docList = processToken(index, str);
 				if (docList == null){
 					return null;
 				}
-				if (Q.isEmpty()){
-					Q = docList;
-				}
-				else {
+				if(str.startsWith("-")){
+					notList.add(docList);
+				} else {
 					Q = AndMerge(Q, docList);
 				}
+			}
+		}
+		if(!notList.isEmpty()){
+			for(int i = 0; i < notList.size(); i++){
+				Q = NotMerge(Q, notList.get(i));
 			}
 		}
 
 		return Q;
 	}
 
-	private static List<Integer> processPhrase(NaiveInvertedIndex index, String posLit2){
+	private static List<Integer> processToken(PositionalInvertedIndex index, String posLit1){
+		String token = posLit1.toLowerCase();
+		token = PorterStemmer.processToken(token);
+		List<Integer> postings = index.getPostings(token);
+
+		return postings;
+	}
+
+
+	private static List<Integer> processPhrase(PositionalInvertedIndex index, String posLit2){
 		List<Integer> docIDs = new ArrayList<Integer>();
 		AdvancedTokenStream readText;
 		String token;
@@ -189,6 +233,7 @@ public class ProcessQuery {
 		int docID_2 = -1;
 
 		do{
+			//System.out.println("Looping");
 			// set up the documents to compare
 			if(docID_1 == -1){		// required for initial assignment 
 				if(it1.hasNext()){				
@@ -201,14 +246,18 @@ public class ProcessQuery {
 			else if(docID_1 < docID_2){
 				if(it1.hasNext()){
 					docID_1 = it1.next();
+				}else {
+					return mergedList;
 				}
 			}
 			else if(docID_1 > docID_2){
 				if(it2.hasNext()){
 					docID_2 = it2.next();
+				}else {
+					return mergedList;
 				}
 			}
-			else if((docID_1 != docID_2) && (!it1.hasNext() || !it2.hasNext()) ){
+			else if((!it1.hasNext() || !it2.hasNext()) ){
 				return mergedList; 
 			}
 
@@ -258,34 +307,33 @@ public class ProcessQuery {
 		return mergedList;
 	}
 
-	private static List<Integer> processToken(NaiveInvertedIndex index, String posLit1){
-		String token = posLit1.toLowerCase();
-		token = PorterStemmer.processToken(token);
-		List<Integer> postings = index.getPostings(token);
+	//TO-DO change to take in arrays only need to Build the Index First
+	private static List<Integer> AndMerge(List<Integer> p11, List<Integer> p22){
+		Integer[] mergedP;
+		Collections.sort(p11);
+		Collections.sort(p22);
+		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
+		Integer[] p2 = p22.toArray(new Integer[p22.size()]);
 
-		return postings;
-	}
+		int size = 0;
+		if(p1.length < p2.length){
+			size = p1.length;
+		}else {
+			size = p2.length;
+		}
+		mergedP = new Integer[size];
 
-	private static List<Integer> AndMerge(List<Integer> p1, List<Integer> p2){
-		List<Integer> mergedP = new ArrayList<Integer>();
-		Collections.sort(p1);
-		Collections.sort(p2);
 		int i = 0;
 		int j = 0;
+		int mergedCounter = 0;
 		int doc1 = -1;
 		int doc2 = -1;
-
-		while (true){
-			if (i >= p1.size()){
-				break;
-			}
-			else if ( j>= p2.size()){
-				break;
-			}
-			doc1 = p1.get(i);
-			doc2 = p2.get(j);
+		
+		while (i < p1.length && j < p2.length){
+			doc1 = p1[i];
+			doc2 = p2[j];
 			if (doc1 == doc2){
-				mergedP.add(doc1);
+				mergedP[mergedCounter++] = doc1;
 				i++;
 				j++;
 			}
@@ -296,70 +344,151 @@ public class ProcessQuery {
 				i++;
 			}
 		}
-		return mergedP;
+		if(mergedCounter < mergedP.length){
+			mergedP[mergedCounter] = -1;
+		}
+		//Temp conversion -DELETE ME
+		List<Integer> temp = new ArrayList<Integer>();
+		for(int i1 = 0; i1 < mergedP.length; i1++){
+			if(mergedP[i1] != -1){
+				temp.add(mergedP[i1]);
+			}else {
+				break;
+			}
+		}
+
+		return temp;
 	}
 
-	private static List<Integer> OrMerge(List<Integer> p1, List<Integer> p2){
-		List<Integer> mergedP = new ArrayList<Integer>();
-		Collections.sort(p1);
-		Collections.sort(p2);
+	//TO-DO change to take in arrays only need to Build the Index First
+	private static List<Integer> OrMerge(List<Integer> p11, List<Integer> p22){
+		Integer[] mergedP;
+		if(p11 == null){
+			return p22;
+		}else if(p22 == null){
+			return p11;
+		}
+		Collections.sort(p11);
+		Collections.sort(p22);
+		Integer[] p1 = p11.toArray(new Integer[p11.size()]);
+		Integer[] p2 = p22.toArray(new Integer[p22.size()]);
 
-		if (p1 == null){
-			return p2;
-		}
-		else if(p2 == null){
-			return p1;
-		}
-		
+		int size = p1.length + p2.length;
+
+		mergedP = new Integer[size];
+
 		int i = 0;
 		int j = 0;
+		int mergedCounter = 0;
 		int doc1 = -1;
 		int doc2 = -1;
-		
 		while(true){
-			if(i < p1.size() && j < p2.size()){
-				doc1 = p1.get(i);
-				doc2 = p2.get(j);
+			if(i < p1.length && j < p2.length){
+				doc1 = p1[i];
+				doc2 = p2[j];
 			}
-			if(i >= p1.size()){
-				while(j < p2.size()){
-					mergedP.add(doc2);
+			
+			if(i >= p1.length){
+				while(j < p2.length){
+					mergedP[mergedCounter++] = p2[j];
 					j++;
 				}
 				break;
 			}
-			else if(j >= p2.size()){
-				while(i < p1.size()){
-					mergedP.add(doc1);
+			else if(j >= p2.length){
+				while(i < p1.length){
+					mergedP[mergedCounter++] = p1[i];
 					i++;
 				}
 				break;
 			}
 			else{
-
 				if(doc1 == doc2){
-					mergedP.add(doc1);
+					mergedP[mergedCounter++] = doc1;
 					i++;
 					j++;
 				}
 				else if(doc1 > doc2){
-					mergedP.add(doc2);
+					mergedP[mergedCounter++] = doc2;
 					j++;
 				}
 				else {
-					mergedP.add(doc1);
+					mergedP[mergedCounter++] = doc1;
 					i++;
 				}
 			}
 		}
+
+		if(mergedCounter < mergedP.length){
+			mergedP[mergedCounter] = -1;
+		}
+		//Temp conversion -DELETE ME
+		List<Integer> temp = new ArrayList<Integer>();
+		for(int i1 = 0; i1 < mergedP.length; i1++){
+			if(mergedP[i1] != -1){
+				temp.add(mergedP[i1]);
+			}else{
+				break;
+			}
+		}
+		return temp;
+	}
+	
+	private static List<Integer> NotMerge(List<Integer> p1, List<Integer> p2){
+		List<Integer> mergedP = new ArrayList<Integer>();
+		if(p1 == null){
+			return p2;
+		}else if(p2 == null){
+			return p1;
+		}
+		Collections.sort(p1);
+		Collections.sort(p2);
+		
+		int i = 0;
+		int j = 0;
+		int doc1 = -1;
+		int doc2 = -1;
+
+		while (true){
+		
+			
+			if (i >= p1.size()){
+				break;
+			}
+			else if ( j >= p2.size()){
+			 
+			    for (int k = i; k < p1.size(); k++) {
+				   mergedP.add(p1.get(k));  // continue to add all the rest
+	            }
+				break;
+			}
+			
+			doc1 = p1.get(i);
+			doc2 = p2.get(j);
+		
+			
+			if (doc1 == doc2){
+				
+				i++;
+				j++;
+			}
+			else if (doc1 > doc2){
+				j++;
+			}
+			else {   // doc1 < doc2
+					mergedP.add(doc1);
+				i++;
+			}
+		}
+		
+		
 		return mergedP;
 	}
+
+
+
+
 }
-
-
-
-
-
 
 
 

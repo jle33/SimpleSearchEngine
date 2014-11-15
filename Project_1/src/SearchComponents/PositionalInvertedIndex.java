@@ -1,8 +1,9 @@
 package SearchComponents;
 
+
 import java.util.*;
 
-public class NaiveInvertedIndex {
+public class PositionalInvertedIndex {
 	private HashMap<String, HashMap<Integer, List<Integer>>> mIndex;
 	private List<String> typeIndex;	// only for storing the types
 	private int numTypes;
@@ -13,7 +14,7 @@ public class NaiveInvertedIndex {
 	private double[] termFreq;			// stores up to 10 of the highest probability terms in directory
 	private int totalIndexSize;
 
-	public NaiveInvertedIndex() {
+	public PositionalInvertedIndex() {
 		mIndex = new HashMap<String, HashMap<Integer, List<Integer>>>();
 		typeIndex = new ArrayList<String>();
 		numTypes = 0;
