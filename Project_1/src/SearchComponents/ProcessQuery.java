@@ -32,15 +32,16 @@ public class ProcessQuery {
 		boolean endPhrase = true;
 		boolean isOr = false;
 		for (int i = 0; i < tokens.length; i++) {
-			if(!tokens[i].equals("+")){
+			String tokenStr = tokens[i];
+			if(!tokenStr.equals("+")){
 				//find first "
-				if(tokens[i].substring(0, 1).equals("\"")){
+				if(tokenStr.substring(0, 1).equals("\"") || tokenStr.substring(1, 2).equals("\"")){
 					isPhrase = true;
 					endPhrase = false;
 				}
 
 				//find 2nd "
-				if(tokens[i].substring(tokens[i].length()-1, tokens[i].length()).equals("\"")){
+				if(tokenStr.substring(tokenStr.length()-1, tokenStr.length()).equals("\"")){
 					endPhrase = true;
 				}
 
@@ -48,22 +49,22 @@ public class ProcessQuery {
 				if (isPhrase){
 					if (endPhrase){
 						isPhrase = false;
-						posLit2.add(tokens[i]);
+						posLit2.add(tokenStr);
 						String phrase = "";
 						for(String str : posLit2){
 							phrase = phrase + " " + str;
 						}
-						queryLiteral.put(phrase, true);
+						queryLiteral.put(phrase.trim(), true);
 						posLit2 = new ArrayList<String>();
 					}
 					else {
-						posLit2.add(tokens[i]);
+						posLit2.add(tokenStr);
 					}
 
 				}
 				else {
-					posLit1 = tokens[i];
-					queryLiteral.put(posLit1, false);
+					posLit1 = tokenStr;
+					queryLiteral.put(posLit1.trim(), false);
 
 
 				}
@@ -99,8 +100,20 @@ public class ProcessQuery {
 		java.util.Iterator<String> it = queryLiteral.keySet().iterator();
 		String str = null;
 		List<Integer> docList;
-		if(it.hasNext()){
+		List<List<Integer>> notList = new ArrayList<List<Integer>>();
+		
+		while(it.hasNext()){
 			str = it.next();
+			if(str.startsWith("-")){
+				if(queryLiteral.get(str) == true){
+					docList = processPhrase(index, str);
+				} else {
+					docList = processToken(index, str);
+				}
+				notList.add(docList);
+			} else {
+				break;
+			}
 		}
 		
 		if(queryLiteral.get(str) == true){
@@ -117,15 +130,27 @@ public class ProcessQuery {
 				if(docList == null){
 					return null;
 				}
-				Q = AndMerge(Q, docList);
-				
+				if(str.startsWith("-")){
+					notList.add(docList);
+				} else {
+					Q = AndMerge(Q, docList);
+				}
 			}
 			else if(queryLiteral.get(str) == false){
 				docList = processToken(index, str);
 				if (docList == null){
 					return null;
 				}
-				Q = AndMerge(Q, docList);
+				if(str.startsWith("-")){
+					notList.add(docList);
+				} else {
+					Q = AndMerge(Q, docList);
+				}
+			}
+		}
+		if(!notList.isEmpty()){
+			for(int i = 0; i < notList.size(); i++){
+				Q = NotMerge(Q, notList.get(i));
 			}
 		}
 
@@ -408,10 +433,62 @@ public class ProcessQuery {
 		}
 		return temp;
 	}
+	
+	private static List<Integer> NotMerge(List<Integer> p1, List<Integer> p2){
+		List<Integer> mergedP = new ArrayList<Integer>();
+		if(p1 == null){
+			return p2;
+		}else if(p2 == null){
+			return p1;
+		}
+		Collections.sort(p1);
+		Collections.sort(p2);
+		
+		int i = 0;
+		int j = 0;
+		int doc1 = -1;
+		int doc2 = -1;
+
+		while (true){
+		
+			
+			if (i >= p1.size()){
+				break;
+			}
+			else if ( j >= p2.size()){
+			 
+			    for (int k = i; k < p1.size(); k++) {
+				   mergedP.add(p1.get(k));  // continue to add all the rest
+	            }
+				break;
+			}
+			
+			doc1 = p1.get(i);
+			doc2 = p2.get(j);
+		
+			
+			if (doc1 == doc2){
+				
+				i++;
+				j++;
+			}
+			else if (doc1 > doc2){
+				j++;
+			}
+			else {   // doc1 < doc2
+					mergedP.add(doc1);
+				i++;
+			}
+		}
+		
+		
+		return mergedP;
+	}
+
+
+
+
 }
-
-
-
 
 
 
