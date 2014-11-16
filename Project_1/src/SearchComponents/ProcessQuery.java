@@ -20,7 +20,6 @@ public class ProcessQuery {
 		//2. a sequence of tokens that are within double quotes, phase query
 		String posLit2 = "";
 
-		String[][] myOrList;
 		//take care of + (OR) when it sees + store in new queryLiteral
 		List<int[]> OrList = new ArrayList<int[]>();
 		HashMap<String, Boolean> queryLiteral = new HashMap<String,Boolean>();
@@ -32,34 +31,47 @@ public class ProcessQuery {
 		boolean endPhrase = true;
 		boolean isOr = false;
 		for (int i = 0; i < tokens.length; i++) {
+			String curToken = tokens[i];
 			if(!tokens[i].equals("+")){
 				//find first quotation mark "
-				if(tokens[i].substring(0, 1).equals("\"")){
-					isPhrase = true;
-					endPhrase = false;
-				}
+				if(curToken.length() > 1) {
+					if(curToken.substring(0, 1).equals("\"") || curToken.substring(1, 2).equals("\"")){
+						isPhrase = true;
+						endPhrase = false;
+					}
 
-				//find 2nd quotation mark "
-				if(tokens[i].substring(tokens[i].length()-1, tokens[i].length()).equals("\"")){
-					endPhrase = true;
+					//find 2nd quotation mark "
+					if(curToken.substring(curToken.length()-1, curToken.length()).equals("\"")){
+						endPhrase = true;
+					}
 				}
 
 				if (isPhrase){
 					if (endPhrase){
 						isPhrase = false;
 						//Add individual tokens to the 
-						posLit2 = posLit2 + tokens[i] + " ";
-						queryLiteral.put(posLit2, true);
+						posLit2 = posLit2 + curToken + " ";
+						queryLiteral.put(posLit2.trim(), true);
 						posLit2 = "";
 					}
 					else {
-						posLit2 = posLit2 + tokens[i] + " ";
+						posLit2 = posLit2 + curToken + " ";
 					}
 
 				}
+				else if((tokens.length > 2) &&
+						(i < tokens.length - 1) && 
+						(tokens[i+1].length() > 5))
+				{ 
+					if(tokens[i+1].substring(0,5).equals("NEAR/")){ //Provided there are terms to the left and right of the NEAR operator
+						posLit2 = tokens[i+1] + " " + curToken + " " + tokens[i+2];
+						queryLiteral.put(posLit2.trim(), true);
+						i = i + 2; 
+					}
+				}
 				else {
-					posLit1 = tokens[i];
-					queryLiteral.put(posLit1, false);
+					posLit1 = curToken;
+					queryLiteral.put(posLit1.trim(), false);
 				}
 
 			}
@@ -93,9 +105,20 @@ public class ProcessQuery {
 		int[] docList;
 		java.util.Iterator<String> it = queryLiteral.keySet().iterator();
 		String str = null;
+		Vector<int[]> notList = new Vector<int[]>();
 
-		if(it.hasNext()){
+		while(it.hasNext()){
 			str = it.next();
+			if(str.startsWith("-")){
+				if(queryLiteral.get(str) == true){
+					docList = processPhrase(index, str);
+				} else {
+					docList = processToken(index, str);
+				}
+				notList.add(docList);
+			} else {
+				break;
+			}
 		}
 
 		if(queryLiteral.get(str) == true){
@@ -112,7 +135,11 @@ public class ProcessQuery {
 				if(docList == null){
 					return null;
 				}
-				Q = AndMerge(Q, docList);
+				if(str.startsWith("-")){
+					notList.add(docList);
+				} else {
+					Q = AndMerge(Q, docList);
+				}
 
 			}
 			else if(queryLiteral.get(str) == false){
@@ -120,15 +147,23 @@ public class ProcessQuery {
 				if (docList == null){
 					return null;
 				}
-				Q = AndMerge(Q, docList);
+				if(str.startsWith("-")){
+					notList.add(docList);
+				} else {
+					Q = AndMerge(Q, docList);
+				}
 			}
 		}
-
+		if(!notList.isEmpty()){
+			for(int i = 0; i < notList.size(); i++){
+				Q = NotMerge(Q, notList.get(i));
+			}
+		}
 		return Q;
 	}
 
 	private static int[] processToken(DiskPositionalIndex index, String posLit1){
-		String token = posLit1.toLowerCase();
+		String token = posLit1.replaceAll("\\W", "").toLowerCase();
 		token = PorterStemmer.processToken(token);
 		int[] postings = index.GetPostings(token);
 
@@ -138,9 +173,17 @@ public class ProcessQuery {
 
 	private static int[] processPhrase(DiskPositionalIndex index, String posLit2){
 		int[] docIDs = null;
+		int k = 1;
 		AdvancedTokenStream readText;
 		String token;
 		termPostingList[] postings;
+
+		if(posLit2.substring(0, 5).equals("NEAR/")){
+			String getk = posLit2.split(" ")[0];
+			getk = posLit2.substring(5, getk.length());
+			k = Integer.parseInt(getk);
+			posLit2 = posLit2.substring(5 + getk.length(), posLit2.length());
+		}
 
 		//Get postings list with position for first token in phrase
 		readText = new AdvancedTokenStream(posLit2);
@@ -165,7 +208,7 @@ public class ProcessQuery {
 				return docIDs;
 			}
 
-			postings = mergePhrase(postings, postings_2, 1);
+			postings = mergePhrase(postings, postings_2, k);
 
 		}
 
@@ -175,7 +218,11 @@ public class ProcessQuery {
 		 * After merging the phrases, now we just need the docIDs to merge the other literals together
 		 * so copy all docIDs into a separate array and return it
 		 */
-
+		if(postings == null){
+			docIDs = new int[1];
+			docIDs[0] = -1;
+			return docIDs;
+		}
 		docIDs = new int[postings.length];
 		for(int i = 0; i < postings.length; i++){
 			docIDs[i] = postings[i].getDocID();
@@ -187,6 +234,9 @@ public class ProcessQuery {
 	private static termPostingList[] mergePhrase(termPostingList[] p1, termPostingList[] p2, int k){
 		termPostingList[] mergedList;
 		int size = 0;
+		if(p1 == null || p2 == null){
+			return null;
+		}
 		//At most n operations of the smaller of the two positional lists
 		if(p1.length < p2.length){
 			size = p1.length;
@@ -241,12 +291,12 @@ public class ProcessQuery {
 					mergedList[nextDocID].positions = copyArray(positions);
 					//Below would now be the amount of times that phrase appeared//does not really mean termFreq anymore in this case
 					mergedList[nextDocID].setTermFreq(); //termFreq based on how many times
-					
+					isNear = false;
 				}
 
 				i++; //increment doc1
 				j++; //increment doc2
-				isNear = false;
+				
 			} else if(docID_1 < docID_2) {
 				i++;
 			} else if(docID_1 > docID_2){
@@ -265,13 +315,12 @@ public class ProcessQuery {
 			return mergedList;
 		}
 		//Downsize the array;
-		termPostingList[] finalList = new termPostingList[nextDocID + 1];
-		for(int i2 = 0; i2 < nextDocID + 1; i2++){
+		termPostingList[] finalList = new termPostingList[nextDocID+1];
+		for(int i2 = 0; i2 < finalList.length; i2++){
 			int docid = mergedList[i2].getDocID();
 			finalList[i2] = new termPostingList();
 			finalList[i2].setDocID(docid);
 			finalList[i2].positions = mergedList[i2].positions;
-			finalList[i2].setTermFreq();
 		}
 		//return empty list if empty
 		return finalList;
@@ -388,6 +437,53 @@ public class ProcessQuery {
 		//For now have a -1 to indicate no more reading.
 		if(mergedCounter < mergedP.length){
 			mergedP[mergedCounter] = -1;
+		}
+
+		return mergedP;
+	}
+
+	private static int[] NotMerge(int[] p1, int[] p2){
+		if(p1 == null || p2 == null)
+			return p1;
+
+		int [] mergedP = new int[p1.length];
+		int i = 0;
+		int j = 0;
+		int mergedCounter = 0;
+		int doc1 = -1;
+		int doc2 = -1;
+		while (true){
+			if (i >= p1.length){
+				break;
+			}
+			else if ( j >= p2.length){
+				for (int k = i; k < p1.length; k++) {
+
+					mergedP[mergedCounter++] = p1[k]; // continue to add all the rest
+				}
+				break;
+			}
+			doc1 = p1[i];
+			doc2 = p2[j];
+			if (doc1 == doc2){
+				i++;
+				j++;
+			}
+			else if (doc1 > doc2){
+				j++;
+			}
+			else { // doc1 < doc2
+				mergedP[mergedCounter++] = doc1;
+				i++;
+			}
+		}
+
+		//What happens when the merged postings don't actually take up the full size of the array
+		//For now have a -1 to indicate no more reading.
+		if((mergedCounter < mergedP.length) && (mergedCounter != 0)){
+			mergedP[mergedCounter] = -1;
+		} else {
+			return null;
 		}
 
 		return mergedP;
