@@ -67,6 +67,8 @@ public class ProcessQuery {
 						posLit2 = tokens[i+1] + " " + curToken + " " + tokens[i+2];
 						queryLiteral.put(posLit2.trim(), true);
 						i = i + 2; 
+					} else { //Not a Near/k Query, regular token
+						queryLiteral.put(curToken.trim(), false);
 					}
 				}
 				else {
@@ -328,6 +330,9 @@ public class ProcessQuery {
 
 	private static int[] AndMerge(int[] p1, int[] p2){
 		int[] mergedP;
+		if(p1 == null || p2 == null)
+			return null;
+			//return new int[]{-1}; 
 		int size = 0;
 		if(p1.length < p2.length){
 			size = p1.length;
