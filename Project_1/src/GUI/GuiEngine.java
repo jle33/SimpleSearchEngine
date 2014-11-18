@@ -17,6 +17,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
+import javax.swing.SwingWorker.StateValue;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -336,18 +338,25 @@ public class GuiEngine extends JFrame implements ActionListener {
 		}*/
 		if(e.getSource() == btnIndex){
 			String folder = directoryTextField.getText();
-			IndexWriter writer = new IndexWriter(folder);
+			//IndexWriter writer = new IndexWriter(folder);
 			try {
 				/*
 				 * TO-DO Put the buildIndex() in its seperate swing worker thread
 				 * -It takes a long to time build an index
 				 * -Have a loading screen or some indication that it is building the index
 				 */
-				LoadingDialogBox dialog = new LoadingDialogBox();
+				
 				//frmSearchEngine.setVisible(false);
-				writer.buildIndex();
+				//writer.buildIndex();
+				mrIndexBuilder indexWorker = new mrIndexBuilder(folder);
+				/*while(indexWorker.getState() != StateValue.DONE){
+					//Do nothing - for now...
+					//TO-DO implement concurrent building of indexes
+				}*/
+				//Switch back to main menu
+				switchPanels(mainMenuPanel, "mainMenu_Panel");
+				
 				//frmSearchEngine.setVisible(true);
-				dialog.taskDone();
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}

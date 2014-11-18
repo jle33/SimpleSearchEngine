@@ -75,8 +75,10 @@ public class LoadingDialogBox extends JDialog {
 	}
 	
 	public void taskDone(){
-		//pause();
+		pause();
 		okButton.setEnabled(true);	
+		//Just close window instead
+		dispose();
 	}
 	
 	

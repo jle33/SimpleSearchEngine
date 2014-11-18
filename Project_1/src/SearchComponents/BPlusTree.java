@@ -12,8 +12,8 @@ import java.nio.file.Path;
 import NET.sourceforge.BplusJ.BplusJ.BplusTreeLong;
 
 public class BPlusTree {
-	private int keylength = 24; //16, 32, 64 bytes 
-	private int nodesize = 6;
+	private int keylength = 32; //16, 32, 64 bytes 
+	private int nodesize = 12;
 	private RandomAccessFile mstream;
 	private BplusTreeLong bpt;
 
