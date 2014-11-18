@@ -1,0 +1,21 @@
+a -"a final theory" -Nantucket  + whale NEAR/15 whalemen   - 8 Documents
+whale NEAR/15 whalemen - 1 Documents
+whale NEAR/2 whalemen - 0
+
+baseball america - 20
+baseball - 389
+america - 24
+baseball + america - 393
+"baseball america" - 8
+
+angels - 1007
+baseball - 389
+angels baseball - 379
+angels + baseball - 1017
+"angels baseball" - 9
+
+angels loves - 95
+angels loves baseball - 379
+angels NEAR/2 baseball - 12
+angels NEAR/1 baseball - 9
+angels NEAR/15 baseball - 73

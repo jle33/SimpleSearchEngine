@@ -2165,7 +2165,7 @@ public class BplusTreeLong implements ITreeIndex
 					//char[] ca = new char[charCount];
 					//decode.GetChars(buffer, index, keylength, ca, 0);
 					//this.NumberOfValidKids++;
-					key = new String(buffer, index, keylength, "UTF-8");
+					key = new String(buffer, index, keylength, "ASCII");
 				}
 				this.ChildKeys[KeyIndex] = key;
 				index+= maxKeyPayload;
@@ -2205,7 +2205,7 @@ public class BplusTreeLong implements ITreeIndex
 			int maxKeyPayload = maxKeyLength - BufferFile.SHORTSTORAGE;
 			//char[] keyChars = key.ToCharArray();
 			//int charCount = encode.GetByteCount(keyChars, 0, keyChars.length, true);
-			byte[] keyBytes = key.getBytes("UTF-8");
+			byte[] keyBytes = key.getBytes("ASCII");
 			int charCount = keyBytes.length;
 			if (charCount>maxKeyPayload) 
 			{
@@ -2239,7 +2239,7 @@ public class BplusTreeLong implements ITreeIndex
 				short charCount = -1;
 				if (theKey!=null) 
 				{
-					byte[] keyBytes = theKey.getBytes("UTF-8");
+					byte[] keyBytes = theKey.getBytes("ASCII");
 					//charCount = (short) encode.GetByteCount(keyChars, 0, keyChars.length, true);
 					charCount = (short) keyBytes.length;
 					if (charCount>maxKeyPayload) 
