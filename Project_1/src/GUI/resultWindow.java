@@ -20,7 +20,9 @@ import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 
+import SearchComponents.DiskEngine;
 import SearchComponents.SearchEngine;
+import java.awt.Color;
 
 public class resultWindow extends JPanel {
 	private JList<String> list;
@@ -35,9 +37,15 @@ public class resultWindow extends JPanel {
 		list.setSelectedIndex(0);
 		listActions();
 		list.setVisibleRowCount(results.size());
-
+		//Quick implementation
+		float[] ad = DiskEngine.getAd();
+		int i = 0;
 		for(String docs : results) {
-			listModel.addElement(docs);
+			if(ad[0] == -1){ //Temp fix for displaying A_d
+				listModel.addElement(docs);
+			} else {
+				listModel.addElement(docs + " " + ad[i++]);
+			}
 		}
 		JScrollPane listScrollPane = new JScrollPane(list);
 		listScrollPane.setPreferredSize(new Dimension(480, 360));

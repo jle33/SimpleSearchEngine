@@ -10,14 +10,17 @@ public class DiskEngine {
 	private static int docCount;
 	private static boolean rankMode = false;
 	private static Accumulator[] rankedDocs;
+	private static float[] docWeights;
 
 	public static List<String> processUserQuery(String userQuery){
 		List<String> docResults = new ArrayList<String>(); //FileNames
 		int[] docIDs;
+		docWeights = new float[1]; //Temp Fix for A_d display
+		docWeights[0] = -1; //Temp Fix for A_d display
 		if(rankMode){
 			rankedDocs = ProcessQuery.rankQuery(index, fileNames, userQuery);
 			docIDs = new int[rankedDocs.length];
-			float[] docWeights = new float[rankedDocs.length];
+			docWeights = new float[rankedDocs.length];
 
 			for(int j = 0; j < rankedDocs.length; j++){
 				docIDs[j] = rankedDocs[j].getDocID();
@@ -58,6 +61,10 @@ public class DiskEngine {
 
 	public static void setRankMode(){
 		rankMode = true;
+	}
+	
+	public static float[] getAd(){
+		return docWeights;
 	}
 
 }

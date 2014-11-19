@@ -12,8 +12,8 @@ import java.nio.file.Path;
 import NET.sourceforge.BplusJ.BplusJ.BplusTreeLong;
 
 public class BPlusTree {
-	private int keylength = 32; //16, 32, 64 bytes 
 	private int nodesize = 12;
+	private int keylength = 64 + nodesize; //16, 32, 64 bytes 
 	private RandomAccessFile mstream;
 	private BplusTreeLong bpt;
 
@@ -49,7 +49,11 @@ public class BPlusTree {
 
 
 	public void store(String vocab, long vocabPos) throws Exception{
-		bpt.set(vocab, vocabPos);
+		if(vocab.length() > keylength){
+			System.out.println("Unable to store: " + vocab + " key too large with size of " + vocab.length());
+		} else {
+			bpt.set(vocab, vocabPos);
+		}
 	}
 
 	public long search(String term){
