@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class DiskPositionalIndex {
@@ -15,6 +16,9 @@ public class DiskPositionalIndex {
 	private List<String> mFileNames;
 	//Added for bptree
 	private BPlusTree bptree;
+	//Added for Wd
+	private float[] mWeightTable;
+	
 
 	public DiskPositionalIndex(String path) {
 		try {
@@ -23,7 +27,9 @@ public class DiskPositionalIndex {
 			mPostings = new RandomAccessFile(new File(path, "postings.bin"), "r");
 			mVocabTable = readVocabTable(path);
 			mFileNames = readFileNames(path);
-
+			mWeightTable = readWeightTable(path);
+			
+			System.out.println("WeightTable size: " + mWeightTable.length);
 			bptree = new BPlusTree();
 			bptree.open(path);
 		}
@@ -88,8 +94,8 @@ public class DiskPositionalIndex {
 		//long postingsPosition = BinarySearchVocabulary(term);
 		long bin = BinarySearchVocabulary(term);
 		long postingsPosition = bptree.search(term);
-		System.out.print("Binary postings position: "+ postingsPosition);
-		System.out.print(""+ BPlusTreeSearch(term));
+		//System.out.print("Binary postings position: "+ postingsPosition);
+		//System.out.print(""+ BPlusTreeSearch(term));
 		asserts(bin, postingsPosition);
 		if (postingsPosition >= 0) {
 			return readPostingsFromFile(mPostings, postingsPosition);
@@ -162,7 +168,7 @@ public class DiskPositionalIndex {
 		if(binary == bpetree){
 			System.out.println("MATCHES!!!");
 		} else {
-			System.out.println("NOPE NOPE NOPE");
+			System.out.println("NOPE No Match");
 		}
 	}
 
@@ -189,10 +195,9 @@ public class DiskPositionalIndex {
 			try {
 				int m = (i + j) / 2;
 				long vListPosition = mVocabTable[m * 2];
-				System.out.println("vListPosition: " + vListPosition);
+				
 				int termLength = (int) (mVocabTable[(m + 1) * 2] - vListPosition);
 				mVocabList.seek(vListPosition);
-
 				byte[] buffer = new byte[termLength];
 				mVocabList.read(buffer, 0, termLength);
 				String fileTerm = new String(buffer, "ASCII");
@@ -200,7 +205,6 @@ public class DiskPositionalIndex {
 				int compareValue = term.compareTo(fileTerm);
 				if (compareValue == 0) {
 					// found it!
-					System.out.println("pListPosition: " + mVocabTable[m * 2 + 1]);
 					return mVocabTable[m * 2 + 1];
 				}
 				else if (compareValue < 0) {
@@ -297,5 +301,51 @@ public class DiskPositionalIndex {
 
 	public int getTermCount() {
 		return mVocabTable.length / 2;
+	}
+
+	private static float[] readWeightTable(String indexName){
+		try{
+			float[] weightsTable;
+			
+			RandomAccessFile weightsFile = new RandomAccessFile(
+					new File(indexName, "docWeights.bin"),
+					"r");
+			
+			byte[] byteBuffer = new byte[4];
+			weightsFile.read(byteBuffer, 0, byteBuffer.length);
+			
+			int tableIndex = 0;
+			weightsTable = new float[ByteBuffer.wrap(byteBuffer).getInt()];
+			System.out.println("Weights on File: " + ByteBuffer.wrap(byteBuffer).getInt());
+			
+			while (weightsFile.read(byteBuffer, 0, byteBuffer.length) > 0){
+				weightsTable[tableIndex] = ByteBuffer.wrap(byteBuffer).getFloat();
+				//System.out.println("Wd of doc" + tableIndex + " = " + weightsTable[tableIndex]);
+				tableIndex++;
+			}
+
+			weightsFile.close();
+			return weightsTable;
+		}
+		catch (FileNotFoundException ex) {
+			System.out.println(ex.toString());
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+	
+	public int getNumDocs(){
+		return mWeightTable.length;
+	}
+
+	public float getDocumentWeight(int documentID){
+		if(documentID < mWeightTable.length){
+			return mWeightTable[documentID];
+		}
+
+		return 0;
 	}
 }

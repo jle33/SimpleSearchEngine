@@ -2,9 +2,14 @@ package SearchComponents;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.Vector;
 
 public class ProcessQuery {
@@ -492,6 +497,93 @@ public class ProcessQuery {
 		}
 
 		return mergedP;
+	}
+	public static Accumulator[] rankQuery(DiskPositionalIndex index, List<String> fileNames, String query){
+		String delims = " ";
+		String[] tokens;
+		Set<String> terms = new HashSet<String>();
+		Accumulator[] result = null;
+		
+		tokens = query.split(delims);
+		
+		for(String token : tokens){
+			String term = token.toLowerCase();
+			term = PorterStemmer.processToken(token);
+			terms.add(term);
+		}
+		
+		result = defaultRanking(index, terms);
+		
+		return result;
+	}
+
+	private static Accumulator[] defaultRanking(DiskPositionalIndex index, Set<String> terms) {
+		Accumulator[] rankedResults;
+		HashMap<Integer, Accumulator> accumulators = new HashMap<Integer, Accumulator>();
+		PriorityQueue<Accumulator> setOfWeights; 
+		int numDocs = index.getNumDocs();
+		Accumulator curAccumulator;
+		
+		Comparator<Accumulator> comparator = new AccumulatorComparator();
+		setOfWeights  = new PriorityQueue<Accumulator>(10, comparator);
+		
+		for(String term : terms){
+			termPostingList[] termPostings = index.GetPostingsPositions(term);
+			//System.out.println("NumDocs : " + numDocs);
+			//System.out.println("indexNumDocs : " + index.getNumDocs());
+			//System.out.println("Term posting size : " + termPostings.length);
+			float Wqt = (float) Math.log((1.0 + (numDocs/termPostings.length)));
+			
+			for(int docInPostings = 0; docInPostings < termPostings.length; docInPostings++){
+				termPostingList curPost = termPostings[docInPostings];
+				if(!accumulators.containsKey(curPost.getDocID())){
+					curAccumulator = new Accumulator(curPost.getDocID(), 0); 
+					accumulators.put(curPost.getDocID(), curAccumulator);
+				}
+				curAccumulator = accumulators.get(curPost.getDocID());
+				float Wdt = (float) (1.0 + Math.log(curPost.getTermFreq()));
+				curAccumulator.incrementValue(Wqt * Wdt);
+				accumulators.put(curPost.getDocID(), curAccumulator);
+			}
+		}
+		
+		// create iterator to hold set of all documents use
+		Iterator<Integer> docSet = accumulators.keySet().iterator();
+		//System.out.println("Docset size = " + accumulators.keySet().size());
+		
+		while(docSet.hasNext()){
+			int curDoc = docSet.next();
+			float Ad; 
+			curAccumulator = accumulators.get(curDoc);			//get current accumulator of current document
+			Ad = curAccumulator.getValue();
+			if (Ad != 0){
+				//System.out.println("The Wd weight of doc" + curDoc + " = " + index.getDocumentWeight(curDoc));
+				Ad = (Ad / index.getDocumentWeight(curDoc));
+				accumulators.get(curDoc).setValue(Ad);
+				
+				// add Accumulator to PriorityQueue
+				setOfWeights.add(curAccumulator);
+				while (setOfWeights.size() > 10){		//limit size of PQ to 10
+					setOfWeights.poll();
+				}
+				//System.out.println(setOfWeights.size());
+			}
+		}
+		
+		//System.out.println("Size of accumulator set = " + setOfWeights.size());
+		/*
+		rankedResults = new int[setOfWeights.size()];
+		int numOfWeights = setOfWeights.size();
+		for(int i = 0; (i < numOfWeights) && (i < 10); i++){
+			Accumulator number = setOfWeights.poll();
+			System.out.println("Doc" + number.getDocID() + " = " + number.getValue());
+			//System.out.println("Number = " + number);
+			rankedResults[i] = number.getDocID();
+		}
+		*/
+		rankedResults = setOfWeights.toArray(new Accumulator[0]);
+		
+		return rankedResults;
 	}
 
 	private static int getPositionListSize(int[] pp1, int[] pp2){

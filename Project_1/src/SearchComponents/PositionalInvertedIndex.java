@@ -35,7 +35,7 @@ public class PositionalInvertedIndex {
 	}
 
 	// adds the term, document, and/or position to the index
-	public void addTerm(String term, int documentID, int positionID) {
+	public void addTerm(String term, int documentID, int positionID, HashMap<String, Integer> termFreq) {
 		// add the term to the index hashtable. If the table does not have
 		// an entry for the term, initialize a new ArrayList<Integer>, add the 
 		// docID to the list, and put it into the map. Otherwise add the docID
@@ -45,6 +45,7 @@ public class PositionalInvertedIndex {
 		// knows it is a new document if it is recording the term in position 0 of the document
 		if(positionID == 0){
 			numDocs++;
+			//System.out.println("Number of documents : " + documentID);
 		}
 
 		if(!mIndex.containsKey(term)){							// if do not have the term,
@@ -67,6 +68,14 @@ public class PositionalInvertedIndex {
 		}
 		else{													// every term gets its position recorded
 			mIndex.get(term).get(documentID).add(positionID);
+		}
+		
+		// cannot check with the mIndex since it persists between docs while mTFtd does not
+		if(!termFreq.containsKey(term)){						// if term not in TFtd table
+			termFreq.put(term, 1);
+		}
+		else{
+			termFreq.put(term, termFreq.get(term) + 1);			// increment term count
 		}
 	}
 

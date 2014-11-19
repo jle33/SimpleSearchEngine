@@ -11,6 +11,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -29,8 +30,10 @@ import java.awt.Toolkit;
 import javax.swing.JTextField;
 
 import SearchComponents.DiskEngine;
+import SearchComponents.DiskPositionalIndex;
 import SearchComponents.IndexWriter;
 import SearchComponents.SearchEngine;
+import SearchComponents.Statistics;
 import SearchComponents.SyntaxCheck;
 
 import java.awt.Font;
@@ -39,6 +42,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import javax.swing.JRadioButton;
+import javax.swing.JToggleButton;
 
 
 public class GuiEngine extends JFrame implements ActionListener {
@@ -59,6 +64,9 @@ public class GuiEngine extends JFrame implements ActionListener {
 	private JButton btnChooseDirectoryToRead;
 	private JButton btnReadIndex;
 	private JButton btnReadIndexToMainMenu;
+	private JRadioButton rdbtnBooleanQueryMode;
+	private JRadioButton rdbtnRankedQueryMode;
+	private ButtonGroup btnGroup;
 	/* Launch the application.
 	 */
 	public static void main(String[] args) {
@@ -290,6 +298,26 @@ public class GuiEngine extends JFrame implements ActionListener {
 		userQueryPanel.add(userQuery);
 		userQueryPanel.add(btnSearch);
 		userQueryPanel.add(btnViewIndexStatistics);
+		
+		
+		//Add components for radio button
+		btnGroup = new ButtonGroup();
+		rdbtnBooleanQueryMode = new JRadioButton("Boolean Query Mode");
+		rdbtnBooleanQueryMode.setSelected(true);
+		rdbtnBooleanQueryMode.setActionCommand("Boolean");
+		rdbtnBooleanQueryMode.setBackground(Color.WHITE);
+		rdbtnBooleanQueryMode.setBounds(675, 245, 138, 23);
+		userQueryPanel.add(rdbtnBooleanQueryMode);
+		
+		rdbtnRankedQueryMode = new JRadioButton("Ranked Query Mode");
+		rdbtnRankedQueryMode.setActionCommand("Rank");
+		rdbtnRankedQueryMode.setBackground(Color.WHITE);
+		rdbtnRankedQueryMode.setBounds(675, 271, 138, 23);
+		userQueryPanel.add(rdbtnRankedQueryMode);
+		btnGroup.add(rdbtnBooleanQueryMode);
+		btnGroup.add(rdbtnRankedQueryMode);
+		
+		
 
 	}
 
@@ -379,16 +407,26 @@ public class GuiEngine extends JFrame implements ActionListener {
 			directoryTextField.setText(str);
 
 		}
+		
 		//Handle search button
 		else if(e.getSource() == btnSearch){
 			//Process user query and view results
+			String rdbtn = btnGroup.getSelection().getActionCommand();
+			if(rdbtn.equals("Boolean")){
+				DiskEngine.setBooleanMode();
+			} else {
+				DiskEngine.setRankMode();
+			}
+			
 			viewResults();
 		}
 		//Handle index statistics button
 		else if(e.getSource() == btnViewIndexStatistics){
 			indexStatWindow.setText(null);
-			indexStatWindow.append(directoryTextField.getText() + "\n");
-			indexStatWindow.append(SearchEngine.getStatistics());
+			indexStatWindow.append(dirTextField_ReadIndex.getText() + "\n");
+			//indexStatWindow.append(SearchEngine.getStatistics());
+			Statistics stats = new Statistics(dirTextField_ReadIndex.getText());
+			indexStatWindow.append(stats.getStats());
 			switchPanels(indexStatisticsPanel, "indexStatistics_Panel");
 		}
 		//Handle back to search button

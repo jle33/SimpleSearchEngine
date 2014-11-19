@@ -17,6 +17,7 @@ Writes an inverted indexing of a directory to disk.
 public class IndexWriter {
 
 	private String mFolderPath;
+	private static List<Float> Wd = new ArrayList<Float>();
 
 	/**
    Constructs an IndexWriter object which is prepared to index the given folder.
@@ -43,6 +44,9 @@ public class IndexWriter {
 
 		// Index the directory using a naive index
 		indexFiles(folder, index);
+		
+		// Finalize index statistics 
+		index.finalize();
 
 		// at this point, "index" contains the in-memory inverted index 
 		// now we save the index to disk, building three files: the postings index,
@@ -55,8 +59,11 @@ public class IndexWriter {
 
 		buildVocabFile(folder, dictionary, vocabPositions);
 		buildPostingsFile(folder, index, dictionary, vocabPositions);
+		buildWeightsFile(folder, Wd);
+		buildStatsFile(folder, index);
 	}
 
+	
 	/**
    Builds the postings.bin file for the indexed directory, using the given
    NaiveInvertedIndex of that directory.
@@ -79,11 +86,9 @@ public class IndexWriter {
 			byte[] tSize = ByteBuffer.allocate(4)
 					.putInt(dictionary.length).array();
 			vocabTable.write(tSize, 0, tSize.length);
-
 			//create b plus tree stuff
 			BPlusTree bptree = new BPlusTree();
 			bptree.initialize(folder);
-
 			int vocabI = 0;
 			for (String s : dictionary) {
 				// for each String in dictionary, retrieve its postings.
@@ -95,19 +100,11 @@ public class IndexWriter {
 				byte[] vPositionBytes = ByteBuffer.allocate(8)
 						.putLong(vocabPositions[vocabI]).array();
 
-				if(s.equals("whale")){
-					System.out.println("vocabI " + vocabPositions[vocabI]);
-				}
-
 				vocabTable.write(vPositionBytes, 0, vPositionBytes.length);
 
 				byte[] pPositionBytes = ByteBuffer.allocate(8)
 						.putLong(postingsFile.getChannel().position()).array();
 
-				if(s.equals("whale")){
-					System.out.println("position: " + postingsFile.getChannel().position());
-
-				}
 				//store b plus tree stuff
 				bptree.store(s, postingsFile.getChannel().position());
 
@@ -191,9 +188,6 @@ public class IndexWriter {
 			for (String vocabWord : dictionary) {
 				// for each String in dictionary, save the byte position where that term will start in the vocab file.
 				vocabPositions[vocabI] = vocabPos;
-				if(vocabWord.matches("whale")){
-					System.out.println("" + vocabWord + " " + vocabPos);
-				}
 				vocabList.write(vocabWord); // then write the String
 				vocabI++;
 				vocabPos += vocabWord.length();
@@ -212,6 +206,71 @@ public class IndexWriter {
 		finally {
 			try {
 				vocabList.close();
+			}
+			catch (IOException ex) {
+				System.out.println(ex.toString());
+			}
+		}
+	}
+	
+	private static void buildWeightsFile(String folder, List<Float> dWeights) {
+		FileOutputStream weightsFile = null;
+		try{
+			weightsFile = new FileOutputStream(new File(folder, "docWeights.bin"));
+			
+			// add the document weights to the file: first the number of documents, then their weights
+			byte[] WeightBytes = ByteBuffer.allocate(4).putInt(Wd.size()).array();
+			//System.out.println("Wd size = " + Wd.size());
+			weightsFile.write(WeightBytes, 0, WeightBytes.length);
+			for (int i = 0; i < Wd.size(); i++){
+				WeightBytes = ByteBuffer.allocate(4).putFloat(dWeights.get(i)).array();
+				weightsFile.write(WeightBytes, 0, WeightBytes.length);
+			}
+		}
+		catch (IOException ex) {
+			System.out.println(ex.toString());
+		}
+		finally{
+			try{
+				weightsFile.close();
+			}
+			catch (IOException ex) {
+				System.out.println(ex.toString());
+			}
+		}
+
+	}
+	
+	private static void buildStatsFile(String folder, PositionalInvertedIndex index){
+		FileOutputStream statsFile = null;
+		try{
+			statsFile = new FileOutputStream(new File(folder, "stats.bin"));
+			
+			// add each piece of the statistics in order 
+			byte[] StatBytes = ByteBuffer.allocate(8).putInt(index.getNumTypes()).array();	// number of types
+			statsFile.write(StatBytes, 0, StatBytes.length);
+			StatBytes = ByteBuffer.allocate(8).putInt(index.getNumTerms()).array();			// number of terms
+			statsFile.write(StatBytes, 0, StatBytes.length);
+			StatBytes = ByteBuffer.allocate(8).putDouble(index.getAvgPosts()).array();		// number of avergae docs per post
+			statsFile.write(StatBytes, 0, StatBytes.length);
+			StatBytes = ByteBuffer.allocate(8).putInt(index.getTotalIndexSize()).array();	// approximate size of index
+			statsFile.write(StatBytes, 0, StatBytes.length);
+			
+			// get top term frequencies
+			double[] termFreq = index.getTopTermFreq();
+			StatBytes = ByteBuffer.allocate(8).putInt(termFreq.length).array();				// number of frequencies
+			statsFile.write(StatBytes, 0, StatBytes.length);
+			for(double frequency : termFreq){
+				StatBytes = ByteBuffer.allocate(8).putDouble(frequency).array();			// frequency of term, no name
+				statsFile.write(StatBytes, 0, StatBytes.length);
+			}
+		}
+		catch (IOException ex) {
+			System.out.println(ex.toString());
+		}
+		finally{
+			try{
+				statsFile.close();
 			}
 			catch (IOException ex) {
 				System.out.println(ex.toString());
@@ -270,15 +329,33 @@ public class IndexWriter {
 
 		try {
 			AdvancedTokenStream stream = new AdvancedTokenStream(fileName);
+			HashMap<String, Integer> mTFtd = new HashMap<String, Integer>();	// map of term frequency for current document
+			Float[] Wdt;
 			int curPos = 0;
 			while (stream.hasNextToken()) {
 				String term = stream.nextToken();
+				index.addType(term);				
 				String stemmed = PorterStemmer.processToken(term);
 
 				if (stemmed != null && stemmed.length() > 0) {
-					index.addTerm(stemmed, documentID, curPos++);
+					index.addTerm(stemmed, documentID, curPos++, mTFtd);
 				}
 			}
+			// calculate the Wd weight of current document
+			Integer[] temp = mTFtd.values().toArray(new Integer[0]);		// collect the TFtd values
+			Wdt = new Float[temp.length];
+			int i = 0;
+			for(Integer kd : temp){
+				Wdt[i] = temp[i].floatValue();
+				i++;
+			}
+			float valueWd = 0;
+			for (int x = 0; x < Wdt.length; x++){				// find the sum of Wdt values based on TFtd
+				Wdt[x] = (float) (1 + Math.log(Wdt[x]));		// convert TFtd to Wdt value
+				valueWd += (float) Math.pow(Wdt[x], 2);
+			}
+			Wd.add((float) Math.sqrt(valueWd));
+			//System.out.println(Wd.size());
 		}
 		catch (Exception ex) {
 			System.out.println(ex.toString());

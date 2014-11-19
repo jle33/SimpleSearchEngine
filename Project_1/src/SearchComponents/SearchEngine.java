@@ -12,6 +12,7 @@ public class SearchEngine {
 	private static String stats;	// string representation of statistics
 	private static List<String> fileNames;
 	private static List<String> results;
+	private static HashMap<String, Integer> mTFtd;
 	private static Path curPath;
 	private static int docCount;
 	private static PositionalInvertedIndex index;
@@ -99,7 +100,7 @@ public class SearchEngine {
 					//Remove hyphens from token, then add type and term to their respective index
 					String noHypenToken = curToken.replaceAll(" ", "");
 					index.addType(noHypenToken);
-					index.addTerm(noHypenToken, docID, termPos);
+					index.addTerm(noHypenToken, docID, termPos, mTFtd);
 					termPos++;
 					//Steps to process original token into two tokens without hyphen
 					AdvancedTokenStream readHyphenToken = new AdvancedTokenStream(curToken);
@@ -107,7 +108,7 @@ public class SearchEngine {
 						curToken = readHyphenToken.nextToken();
 						if(curToken != null){
 							index.addType(curToken);
-							index.addTerm(PorterStemmer.processToken(curToken), docID, termPos);
+							index.addTerm(PorterStemmer.processToken(curToken), docID, termPos, mTFtd);
 							termPos++;
 						}
 					}
@@ -116,7 +117,7 @@ public class SearchEngine {
 					if(curToken != null){
 						index.addType(curToken);
 						String stemmedToken = PorterStemmer.processToken(curToken);
-						index.addTerm(stemmedToken, docID, termPos);
+						index.addTerm(stemmedToken, docID, termPos,  mTFtd);
 						termPos++;
 					}
 				}
